@@ -20,8 +20,8 @@ type Button struct {
 
 func GetActiveContentByID(db *sql.DB, id int) (ActiveContent, error) {
 	var content ActiveContent
-	err := db.QueryRow("SELECT id, title, content, image, buttons FROM active WHERE id = ?", id).Scan(
-		&content.ID, &content.Title, &content.Content, &content.Image, &content.Buttons)
+	err := db.QueryRow("SELECT id, activity_text, activity_image FROM activity WHERE id = ?", id).Scan(
+		&content.ID, &content.Content, &content.Image)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ActiveContent{}, fmt.Errorf("no active content found with id %d", id)
@@ -30,7 +30,7 @@ func GetActiveContentByID(db *sql.DB, id int) (ActiveContent, error) {
 	}
 
 	// Fetch buttons for this active content
-	rows, err := db.Query("SELECT button_text, button_link FROM buttons WHERE active_id = ?", id)
+	rows, err := db.Query("SELECT button_text, button_link FROM activity_button WHERE activity_id = ?", id)
 	if err != nil {
 		return ActiveContent{}, fmt.Errorf("error querying buttons: %w", err)
 	}

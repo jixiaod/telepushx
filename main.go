@@ -19,9 +19,10 @@ import (
 const (
 	telegramAPIBaseURL = "https://api.telegram.org/bot"
 	botToken           = "6253545273:AAEzdFppjluWM_QplxoZiMsi0GJzDgNmEVI"  // Replace with your actual bot token
-	dbConnectionString = "user:password@tcp(localhost:3306)/database_name" // Replace with your actual database connection string
+	dbConnectionString = "xiaozhushou_tiger:dxFNKCfddzFDaXr2@tcp(localhost:3306)/xiaozhushou_tiger" // Replace with your actual database connection string
 	maxSendRate        = 30                                                // Maximum messages per second
 	maxSendDuration    = 20 * time.Minute                                  // Maximum duration for sending messages
+    appImageHost       = "https://tiger.ytxzs.com/uploads/"
 )
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 		log.Fatalf("Error getting users: %v", err)
 	}
 
-	activeContent, err := model.GetActiveContentByID(db, 1)
+	activeContent, err := model.GetActiveContentByID(db, 163)
 	if err != nil {
 		log.Fatalf("Error getting active content: %v", err)
 	}
@@ -103,7 +104,7 @@ func main() {
 						log.Printf("Error parsing ChatID for user %d: %v", u.ID, err)
 						return
 					}
-					photo := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath(activeContent.Image))
+					photo := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath(appImageHost + activeContent.Image))
 					photo.Caption = activeContent.Title
 					_, err = bot.Send(photo)
 					if err != nil {

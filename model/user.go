@@ -11,7 +11,7 @@ type User struct {
 }
 
 func GetAllUsers(db *sql.DB) ([]User, error) {
-	rows, err := db.Query("SELECT id, chat_id FROM user")
+	rows, err := db.Query("SELECT id, tete_id FROM users ORDER BY id ASC limit 10")
 	if err != nil {
 		return nil, fmt.Errorf("error querying users: %w", err)
 	}
