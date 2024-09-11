@@ -20,7 +20,7 @@ func PushMessage(c *gin.Context) {
 
 	//user := model.User{ID: c.Param("id")}
 	id := c.Param("id")
-	users, err := model.GetAllUsers(0, 100000)
+	users, err := model.GetAllUsers(0, 10000)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -38,6 +38,7 @@ func PushMessage(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting active content"})
 		return
 	}
+	log.Printf("activity: %v", activity.Content)
 
 	go func() {
 		//var keyboard [][]tgbotapi.InlineKeyboardButton
@@ -60,7 +61,7 @@ func PushMessage(c *gin.Context) {
 
 		// Start a goroutine to stop the process after maxSendDuration
 		go func() {
-			time.Sleep(300 * time.Second)
+			time.Sleep(20 * time.Second)
 			done <- true
 		}()
 
@@ -116,7 +117,7 @@ func PushMessage(c *gin.Context) {
 
 						// Get the first image from the array
 						firstImage := images[0]
-						photo := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+firstImage))
+						photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+firstImage))
 						photo.Caption = activity.Content
 						_, err = bot.Send(photo)
 						if err != nil {
