@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +20,7 @@ func PushMessage(c *gin.Context) {
 
 	//user := model.User{ID: c.Param("id")}
 	id := c.Param("id")
-	users, err := model.GetAllUsers(0, 100)
+	users, err := model.GetAllUsers(0, 100000)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -99,7 +100,23 @@ func PushMessage(c *gin.Context) {
 							log.Printf("Error parsing ChatID for user %d: %v", u.ChatId, err)
 							return
 						}
-						photo := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Image))
+						// Parse the JSON array from activity.Image
+						var images []string
+						err = json.Unmarshal([]byte(activity.Image), &images)
+						if err != nil {
+							log.Printf("Error parsing image JSON for user %d: %v", u.ChatId, err)
+							return
+						}
+
+						// Check if there's at least one image
+						if len(images) == 0 {
+							log.Printf("No images found for user %d", u.ChatId)
+							return
+						}
+
+						// Get the first image from the array
+						firstImage := images[0]
+						photo := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+firstImage))
 						photo.Caption = activity.Content
 						_, err = bot.Send(photo)
 						if err != nil {
