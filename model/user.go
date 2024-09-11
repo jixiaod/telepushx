@@ -1,34 +1,37 @@
 package model
 
 import (
-	"database/sql"
-	"fmt"
+	"errors"
 )
 
 type User struct {
-	ID     int
-	ChatID string
+	Id     int
+	Name   string
+	ChatId string
+	Status int
 }
 
-func GetAllUsers(db *sql.DB) ([]User, error) {
-	rows, err := db.Query("SELECT id, tete_id FROM users ORDER BY id ASC limit 10")
-	if err != nil {
-		return nil, fmt.Errorf("error querying users: %w", err)
-	}
-	defer rows.Close()
+func GetAllUsers(startIdx int, num int) (users []*User, err error) {
+	err = DB.Table("users").Order("id desc").Limit(num).Offset(startIdx).Select([]string{"id", "name", "tete_id as chat_id", "status"}).Find(&users).Error
+	return users, err
+}
 
-	var users []User
-	for rows.Next() {
-		var u User
-		if err := rows.Scan(&u.ID, &u.ChatID); err != nil {
-			return nil, fmt.Errorf("error scanning user row: %w", err)
-		}
-		users = append(users, u)
-	}
+func GetMaxUserId() int {
+	var user User
+	DB.Last(&user)
+	return user.Id
+}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating user rows: %w", err)
+func GetUserById(id int, selectAll bool) (*User, error) {
+	if id == 0 {
+		return nil, errors.New("id 为空！")
 	}
-
-	return users, nil
+	user := User{Id: id}
+	var err error = nil
+	if selectAll {
+		err = DB.Table("users").First(&user, "id = ?", id).Error
+	} else {
+		err = DB.Table("users").Select([]string{"id", "name", "tete_id as chat_id", "status"}).First(&user, "id = ?", id).Error
+	}
+	return &user, err
 }
