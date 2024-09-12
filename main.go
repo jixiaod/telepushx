@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -70,36 +69,6 @@ func main() {
 	}
 	err = server.Run(":" + port)
 	if err != nil {
-		log.Println(err)
+		common.FatalLog(err)
 	}
-
-	/*
-		// Initialize bot
-		bot, err := tgbotapi.NewBotAPI(botToken)
-		if err != nil {
-			log.Fatalf("Error creating bot: %v", err)
-		}
-		fmt.Println("Bot created successfully!\n", bot.Token)
-
-		// Get users and active content
-		users, err := model.GetAllUsers(db)
-		if err != nil {
-			log.Fatalf("Error getting users: %v", err)
-		}
-
-		activeContent, err := model.GetActiveContentByID(db, 163)
-		if err != nil {
-			log.Fatalf("Error getting active content: %v", err)
-		}
-
-		// Create keyboard from buttons
-		var keyboard [][]tgbotapi.InlineKeyboardButton
-		for _, button := range activeContent.Buttons {
-			keyboardRow := []tgbotapi.InlineKeyboardButton{
-				tgbotapi.NewInlineKeyboardButtonData(button.Text, button.Link),
-			}
-			keyboard = append(keyboard, keyboardRow)
-		}
-	*/
-
 }
