@@ -7,15 +7,6 @@ var Version = "v0.0.1"
 var SystemName = "消息推送服务"
 var ServerAddress = "http://localhost:3000"
 
-var TelegramAPIBaseURL = "https://api.telegram.org/bot"
-var TelegramBotToken = "6253545273:AAEzdFppjluWM_QplxoZiMsi0GJzDgNmEVI"
-var TelegramBotName = "消息推送服务"
-var TelegramBotAvatar = ""
-var TelegramBotDescription = "消息推送服务"
-var TelegramBotHomePageLink = "https://tiger.ytxzs.com"
-var TelegramBotFooter = ""
-var TelegramBotFooterLink = "https://tiger.ytxzs.com"
-
 // All duration's unit is seconds
 // Shouldn't larger then RateLimitKeyExpirationDuration
 var (
@@ -36,3 +27,5 @@ var (
 )
 
 var RateLimitKeyExpirationDuration = 20 * time.Minute
+
+var GetAllUsersLimitSizeNum = 100

@@ -2,36 +2,46 @@ package model
 
 import (
 	"errors"
+	"time"
 )
 
 type User struct {
-	Id     int
-	Name   string
-	ChatId string
-	Status int
+	Id        uint64    `gorm:"column:id;primaryKey;autoIncrement;type:bigint(20) unsigned"`
+	Name      string    `gorm:"column:name;type:varchar(255)"`
+	Username  string    `gorm:"column:username;type:varchar(255)"`
+	ChatId    string    `gorm:"column:tete_id;type:varchar(60)"`
+	Status    int       `gorm:"column:status;type:int(11)"`
+	PushOrder int       `gorm:"column:push_order;type:int(11)"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at"`
+}
+
+func (User) TableName() string {
+	return "users"
 }
 
 func GetAllUsers(startIdx int, num int) (users []*User, err error) {
-	err = DB.Table("users").Order("id asc").Limit(num).Offset(startIdx).Select([]string{"id", "name", "tete_id as chat_id", "status"}).Find(&users).Error
+
+	err = DB.Where("status = 1").Order("push_order desc").Limit(num).Offset(startIdx).Select([]string{"id", "name", "tete_id", "status"}).Find(&users).Error
 	return users, err
 }
 
-func GetMaxUserId() int {
+func GetMaxUserId() int64 {
 	var user User
 	DB.Last(&user)
-	return user.Id
+	return int64(user.Id)
 }
 
 func GetUserById(id int, selectAll bool) (*User, error) {
 	if id == 0 {
 		return nil, errors.New("id 为空！")
 	}
-	user := User{Id: id}
+	user := User{Id: uint64(id)}
 	var err error = nil
 	if selectAll {
-		err = DB.Table("users").First(&user, "id = ?", id).Error
+		err = DB.First(&user, "id = ?", id).Error
 	} else {
-		err = DB.Table("users").Select([]string{"id", "name", "tete_id as chat_id", "status"}).First(&user, "id = ?", id).Error
+		err = DB.Select([]string{"id", "name", "tete_id", "status"}).First(&user, "id = ?", id).Error
 	}
 	return &user, err
 }

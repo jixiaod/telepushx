@@ -3,11 +3,11 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"sync"
+	"telepushx/common"
 	"telepushx/model"
 	"time"
 
@@ -33,7 +33,6 @@ func PushMessage(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting active content"})
 		return
 	}
-	log.Printf("activity: %v", activity.Content)
 
 	go doPushMessage(activity)
 
@@ -43,15 +42,15 @@ func PushMessage(c *gin.Context) {
 
 func doPushMessage(activity *model.Activity) {
 
-	users, err := model.GetAllUsers(0, 100)
+	users, err := model.GetAllUsers(0, common.GetAllUsersLimitSizeNum)
 	if err != nil {
-		log.Printf("Error getting users: %v", err)
+		common.FatalLog("Error getting users: %v", err)
 		return
 	}
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
-		log.Printf("Error creating bot: %v", err)
+		common.FatalLog("Error creating bot: %v", err)
 		return
 	}
 
@@ -72,21 +71,20 @@ func doPushMessage(activity *model.Activity) {
 				if err := limiter.Wait(ctx); err != nil {
 					// If rate limit is exceeded, add the user back to the front of the queue
 					users = append([]*model.User{u}, users...)
-					log.Printf("Rate limit exceeded for user %s, adding back to the front of the queue", u.ChatId)
-					log.Printf("Rate limit error for user %s: %v", u.ChatId, err)
+					common.SysLog("Rate limit exceeded for user " + u.ChatId + " adding back to the front of the queue")
 					return
 				}
 
 				chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
 				if err != nil {
-					log.Printf("Error parsing ChatID for user %s: %v", u.ChatId, err)
+					common.FatalLog("Error parsing ChatID for user %s: %v", u.ChatId, err)
 					return
 				}
 
 				var images []string
 				err = json.Unmarshal([]byte(activity.Image), &images)
 				if err != nil {
-					log.Printf("Error parsing image JSON for user %s: %v", u.ChatId, err)
+					common.FatalLog("Error parsing image JSON for user %s: %v", u.ChatId, err)
 					return
 				}
 
@@ -100,14 +98,14 @@ func doPushMessage(activity *model.Activity) {
 				}
 
 				if err != nil {
-					log.Printf("Error sending message to user %s: %v", u.ChatId, err)
+					common.FatalLog("Error sending message to user %s: %v", u.ChatId, err)
 				} else {
-					log.Printf("Message sent successfully to user %s", u.ChatId)
+					common.SysLog("Message sent successfully to user " + u.ChatId)
 				}
 			}
 		}(user)
 	}
 
 	wg.Wait()
-	log.Println("Push process completed or timed out")
+	common.SysLog("Push process completed or timed out")
 }

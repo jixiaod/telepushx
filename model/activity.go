@@ -5,14 +5,14 @@ import (
 )
 
 type Activity struct {
-	Id      int
-	Content string
-	Image   string
+	Id      int    `gorm:"column:id;primaryKey;autoIncrement;type:int(10) unsigned"`
+	Content string `gorm:"column:activity_text;type:text"`
+	Image   string `gorm:"column:activity_image;type:text"`
+	Video   string `gorm:"column:activity_video;type:text"`
 }
 
-type Button struct {
-	Text string
-	Link string
+func (Activity) TableName() string {
+	return "activity"
 }
 
 func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
@@ -22,9 +22,9 @@ func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
 	activity := Activity{Id: id}
 	var err error = nil
 	if selectAll {
-		err = DB.Table("activity").First(&activity, "id = ?", id).Error
+		err = DB.First(&activity, "id = ?", id).Error
 	} else {
-		err = DB.Table("activity").Select([]string{"id", "activity_text as content", "activity_image as image"}).First(&activity, "id = ?", id).Error
+		err = DB.Select([]string{"id", "activity_text as content", "activity_image as image"}).First(&activity, "id = ?", id).Error
 	}
 	return &activity, err
 }
