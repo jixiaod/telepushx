@@ -30,7 +30,7 @@ func printHelp() {
 	os.Exit(0)
 }
 
-func init() {
+func Init() {
 	flag.Parse()
 
 	if *PrintVersion {

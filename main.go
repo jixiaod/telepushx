@@ -18,6 +18,7 @@ func main() {
 		common.FatalLog(err)
 	}
 
+	common.Init()
 	common.SetupDailyRotateLog()
 	common.SysLog("TelepushX " + common.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
