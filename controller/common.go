@@ -25,8 +25,16 @@ func GetStatus(c *gin.Context) {
 func GetActiveUserCount(c *gin.Context) {
 	count, err := model.GetActiveUserCount()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+			"data":    gin.H{},
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"count": count})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    gin.H{"count": count},
+	})
 }

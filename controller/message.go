@@ -24,19 +24,31 @@ func PushMessage(c *gin.Context) {
 	// Convert id from string to int
 	intId, err := strconv.Atoi(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid ID format",
+			"data":    gin.H{},
+		})
 		return
 	}
 
 	activity, err := model.GetActiveContentByID(intId, false)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting active content"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error getting active content",
+			"data":    gin.H{},
+		})
 		return
 	}
 
 	go doPushMessage(activity)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Push process started"})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Push process started",
+		"data":    gin.H{},
+	})
 	//return nil
 }
 
@@ -44,13 +56,13 @@ func doPushMessage(activity *model.Activity) {
 
 	users, err := model.GetAllUsers(0, common.GetAllUsersLimitSizeNum)
 	if err != nil {
-		common.FatalLog("Error getting users: %v", err)
+		common.SysError("Error getting users: " + err.Error())
 		return
 	}
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
-		common.FatalLog("Error creating bot: %v", err)
+		common.SysError("Error creating bot: " + err.Error())
 		return
 	}
 

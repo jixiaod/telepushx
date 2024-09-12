@@ -28,7 +28,14 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-
+		err = db.AutoMigrate(&Activity{})
+		if err != nil {
+			return err
+		}
+		err = db.AutoMigrate(&Button{})
+		if err != nil {
+			return err
+		}
 		return err
 	} else {
 		common.FatalLog(err)

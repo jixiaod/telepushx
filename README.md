@@ -1,4 +1,4 @@
-# telepushx
+# TelePushX
 
 Telepushx is a Telegram message push service that supports sending messages to multiple users at the same time.
 
