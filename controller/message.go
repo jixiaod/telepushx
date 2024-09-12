@@ -98,7 +98,7 @@ func doPushMessage(activity *model.Activity) {
 				}
 
 				if err != nil {
-					common.FatalLog("Error sending message to user %s: %v", u.ChatId, err)
+					common.SysLog("Error sending message to user " + u.ChatId + " " + err.Error())
 				} else {
 					common.SysLog("Message sent successfully to user " + u.ChatId)
 				}
