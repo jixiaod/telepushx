@@ -67,7 +67,7 @@ func doPushMessage(activity *model.Activity) {
 	}
 
 	stats := common.NewPushStats(len(users))
-	limiter := rate.NewLimiter(rate.Limit(30), 1)
+	limiter := rate.NewLimiter(rate.Limit(common.PushJobRateLimitNum), 1)
 	ctx, cancel := context.WithTimeout(context.Background(), common.PushJobStopDuration)
 	defer cancel()
 
