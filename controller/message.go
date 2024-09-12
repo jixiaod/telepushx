@@ -78,11 +78,6 @@ func doPushMessage(activity *model.Activity) {
 				err = sendTelegramMessage(bot, u, activity)
 
 				if err != nil {
-					common.FatalLog("Error parsing ChatID for user %s: %v", u.ChatId, err)
-					return
-				}
-
-				if err != nil {
 					common.SysLog("Error sending message to user " + u.ChatId + " " + err.Error())
 				} else {
 					common.SysLog("Message sent successfully to user " + u.ChatId)
