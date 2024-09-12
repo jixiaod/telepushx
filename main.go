@@ -18,7 +18,7 @@ func main() {
 		common.FatalLog(err)
 	}
 
-	common.SetupGinLog()
+	common.SetupDailyRotateLog()
 	common.SysLog("TelepushX " + common.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
