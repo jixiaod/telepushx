@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"strconv"
-	"time"
 
 	"telepushx/common"
 	"telepushx/model"
@@ -13,15 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	// Assuming MySQL, adjust if using a different database
-)
-
-const (
-	telegramAPIBaseURL = "https://api.telegram.org/bot"
-	botToken           = "6253545273:AAEzdFppjluWM_QplxoZiMsi0GJzDgNmEVI"                           // Replace with your actual bot token
-	dbConnectionString = "xiaozhushou_tiger:dxFNKCfddzFDaXr2@tcp(localhost:3306)/xiaozhushou_tiger" // Replace with your actual database connection string
-	maxSendRate        = 30                                                                         // Maximum messages per second
-	maxSendDuration    = 20 * time.Minute                                                           // Maximum duration for sending messages
-	appImageBaseURL    = "https://tiger.ytxzs.com"
 )
 
 type PushRequest struct {
