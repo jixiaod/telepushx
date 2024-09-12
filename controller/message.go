@@ -198,6 +198,11 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		photo.Caption = common.Text(activity.Content)
 		photo.ParseMode = "HTML"
 		_, err = bot.Send(photo)
+		if err != nil {
+			common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
+			return
+		}
+
 	} else if activity.Type == 1 {
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Video))
 		video.Caption = common.Text(activity.Content)
@@ -208,7 +213,9 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 			return
 		}
 		msg := tgbotapi.NewMessage(chatID, activity.Content)
+		msg.ParseMode = "HTML"
 		_, err = bot.Send(msg)
 	}
+
 	return err
 }
