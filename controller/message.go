@@ -43,7 +43,7 @@ func PushMessage(c *gin.Context) {
 
 func doPushMessage(activity *model.Activity) {
 
-	users, err := model.GetAllUsers(0, 100000)
+	users, err := model.GetAllUsers(0, 100)
 	if err != nil {
 		log.Printf("Error getting users: %v", err)
 		return
@@ -56,7 +56,7 @@ func doPushMessage(activity *model.Activity) {
 	}
 
 	limiter := rate.NewLimiter(rate.Limit(30), 1)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	var wg sync.WaitGroup
@@ -70,6 +70,9 @@ func doPushMessage(activity *model.Activity) {
 				return
 			default:
 				if err := limiter.Wait(ctx); err != nil {
+					// If rate limit is exceeded, add the user back to the front of the queue
+					users = append([]*model.User{u}, users...)
+					log.Printf("Rate limit exceeded for user %s, adding back to the front of the queue", u.ChatId)
 					log.Printf("Rate limit error for user %s: %v", u.ChatId, err)
 					return
 				}
