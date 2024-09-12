@@ -1,6 +1,6 @@
 # TelePushX
 
-Telepushx is a Telegram message push service that supports sending messages to multiple users at the same time.
+Telepushx is a message push service that supports sending messages to multiple users for telegram bot.
 
 ## Features
 
