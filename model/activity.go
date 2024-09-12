@@ -24,7 +24,7 @@ func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
 	if selectAll {
 		err = DB.First(&activity, "id = ?", id).Error
 	} else {
-		err = DB.Select([]string{"id", "activity_text as content", "activity_image as image"}).First(&activity, "id = ?", id).Error
+		err = DB.Select([]string{"id", "activity_text", "activity_image"}).First(&activity, "id = ?", id).Error
 	}
 	return &activity, err
 }
