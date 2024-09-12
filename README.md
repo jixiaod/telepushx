@@ -1,6 +1,6 @@
-# TelePushX
+# telepushx
 
-TelePushX is a Telegram message push service that supports sending messages to multiple users at the same time.
+Telepushx is a Telegram message push service that supports sending messages to multiple users at the same time.
 
 ## Features
 
@@ -34,7 +34,15 @@ go build -ldflags "-s -w" -o telepushx
 ./telepushx --port 3000 --log-dir ./logs 
 ```
 
+## API 
 
-## License
+### Send Message
 
-[MIT](./LICENSE)
+```bash
+curl -X POST http://localhost:3000/api/push/1
+```
+### Send Preview Message
+
+```bash
+curl -X POST http://localhost:3000/api/preview/1/1234567890
+```
