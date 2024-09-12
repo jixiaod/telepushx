@@ -11,14 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	// Assuming MySQL, adjust if using a different database
 )
-
-type PushRequest struct {
-	ID int `json:"id"`
-}
-
-// Import the mysql package
 
 func main() {
 
