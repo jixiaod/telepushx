@@ -4,7 +4,7 @@ import "time"
 
 var StartTime = time.Now().Unix() // unit: second
 var Version = "v0.0.1"
-var SystemName = "消息推送服务"
+var SystemName = "Telegram Message Push Service"
 var ServerAddress = "http://localhost:3000"
 
 // All duration's unit is seconds
