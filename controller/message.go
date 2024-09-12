@@ -195,11 +195,11 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 
 	if len(images) > 0 && activity.Type == 0 {
 		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+images[0]))
-		photo.Caption = activity.Content
+		photo.Caption = common.Text(activity.Content)
 		_, err = bot.Send(photo)
 	} else if activity.Type == 1 {
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Video))
-		video.Caption = activity.Content
+		video.Caption = common.Text(activity.Content)
 		_, err = bot.Send(video)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
