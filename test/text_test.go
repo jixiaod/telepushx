@@ -27,8 +27,8 @@ func TestCommonText(t *testing.T) {
 
 		{
 			name:     "Convert to html case",
-			input:    "title case example",
-			expected: "title case example",
+			input:    "<p>🤩🤩🤩越南妹子全线升级莞式服务！！！加量不加价！！！</p>",
+			expected: "🤩🤩🤩越南妹子全线升级莞式服务！！！加量不加价！！！",
 		},
 	}
 
