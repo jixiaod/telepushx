@@ -5,11 +5,10 @@ Telepushx is a Telegram message push service that supports sending messages to m
 ## Features
 
 - Send messages to multiple users at the same time
-- Send messages to users in batches
-- Send messages to users in real-time
+- Send messages limit rate control (Telegram API limit 30 messages per second),if send message too fast, will sleep a while
+- Send messages limit time control, if push message not finished, will stop and wait for next time
 
 ## Usage
-
 
 ## Configuration
 
