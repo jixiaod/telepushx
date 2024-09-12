@@ -75,26 +75,11 @@ func doPushMessage(activity *model.Activity) {
 					return
 				}
 
-				chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
+				err = sendTelegramMessage(bot, u, activity)
+
 				if err != nil {
 					common.FatalLog("Error parsing ChatID for user %s: %v", u.ChatId, err)
 					return
-				}
-
-				var images []string
-				err = json.Unmarshal([]byte(activity.Image), &images)
-				if err != nil {
-					common.FatalLog("Error parsing image JSON for user %s: %v", u.ChatId, err)
-					return
-				}
-
-				if len(images) > 0 {
-					photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+images[0]))
-					photo.Caption = activity.Content
-					_, err = bot.Send(photo)
-				} else {
-					msg := tgbotapi.NewMessage(chatID, activity.Content)
-					_, err = bot.Send(msg)
 				}
 
 				if err != nil {
@@ -108,4 +93,80 @@ func doPushMessage(activity *model.Activity) {
 
 	wg.Wait()
 	common.SysLog("Push process completed or timed out")
+}
+
+func PreviewMessage(c *gin.Context) {
+	uid := c.Param("uid")
+	id := c.Param("id")
+
+	// Convert id from string to int
+	activeID, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	activity, err := model.GetActiveContentByID(activeID, false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting active content"})
+		return
+	}
+
+	// Convert id from string to int
+	userID, err := strconv.Atoi(uid)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UID format"})
+		return
+	}
+	user, err := model.GetUserById(userID, false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting user"})
+		return
+	}
+
+	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
+	if err != nil {
+		common.FatalLog("Error creating bot: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating bot"})
+		return
+	}
+
+	err = sendTelegramMessage(bot, user, activity)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error sending message"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Message sent successfully"})
+}
+
+func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Activity) (err error) {
+	chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
+	if err != nil {
+		common.SysError("Error parsing image JSON for user " + u.ChatId + ": " + err.Error())
+		return
+	}
+	var images []string
+	err = json.Unmarshal([]byte(activity.Image), &images)
+	if err != nil {
+		common.SysError("Error parsing image JSON for user " + u.ChatId + ": " + err.Error())
+		return
+	}
+
+	if len(images) > 0 && activity.Type == 0 {
+		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+images[0]))
+		photo.Caption = activity.Content
+		_, err = bot.Send(photo)
+	} else if activity.Type == 1 {
+		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Video))
+		video.Caption = activity.Content
+		_, err = bot.Send(video)
+		if err != nil {
+			common.SysLog("Error sending video message to user " + u.ChatId + ": " + err.Error())
+			return
+		}
+		msg := tgbotapi.NewMessage(chatID, activity.Content)
+		_, err = bot.Send(msg)
+	}
+	return err
 }

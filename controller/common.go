@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"telepushx/common"
+	"telepushx/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,5 +19,14 @@ func GetStatus(c *gin.Context) {
 			"server_address": common.ServerAddress,
 		},
 	})
-	return
+
+}
+
+func GetActiveUserCount(c *gin.Context) {
+	count, err := model.GetActiveUserCount()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"count": count})
 }

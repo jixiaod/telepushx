@@ -12,9 +12,8 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
 		apiRouter.GET("/status", middleware.CriticalRateLimit(), controller.GetStatus)
-
+		apiRouter.GET("/user-count", middleware.CriticalRateLimit(), controller.GetActiveUserCount)
 		apiRouter.GET("/push/:id", middleware.CriticalRateLimit(), controller.PushMessage)
-		//apiRouter.GET("/preview/:chat_id/:id", middleware.CriticalRateLimit(), controller.RegisterClient)
-
+		apiRouter.GET("/preview/:id/:uid", middleware.CriticalRateLimit(), controller.PreviewMessage)
 	}
 }

@@ -44,3 +44,12 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 	}
 	return &user, err
 }
+
+func GetActiveUserCount() (int64, error) {
+	var count int64
+	err := DB.Model(&User{}).Where("status = ?", 1).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

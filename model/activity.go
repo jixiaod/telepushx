@@ -9,6 +9,7 @@ type Activity struct {
 	Content string `gorm:"column:activity_text;type:text"`
 	Image   string `gorm:"column:activity_image;type:text"`
 	Video   string `gorm:"column:activity_video;type:text"`
+	Type    int    `gorm:"column:type;type:int(11) unsigned"`
 }
 
 func (Activity) TableName() string {
@@ -24,7 +25,7 @@ func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
 	if selectAll {
 		err = DB.First(&activity, "id = ?", id).Error
 	} else {
-		err = DB.Select([]string{"id", "activity_text", "activity_image"}).First(&activity, "id = ?", id).Error
+		err = DB.Select([]string{"id", "activity_text", "activity_image", "type"}).First(&activity, "id = ?", id).Error
 	}
 	return &activity, err
 }
