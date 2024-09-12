@@ -3,10 +3,8 @@ package main
 import (
 	"os"
 	"strconv"
-
 	"telepushx/common"
 	"telepushx/model"
-
 	"telepushx/router"
 
 	"github.com/gin-gonic/gin"
