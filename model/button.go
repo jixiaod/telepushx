@@ -17,16 +17,11 @@ func (Button) TableName() string {
 	return "activity_button"
 }
 
-func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
-	if id == 0 {
-		return nil, errors.New("id 为空！")
+func GetButtonsByActivityId(activityId int) ([]*Button, error) {
+	if activityId == 0 {
+		return nil, errors.New("activity id 为空！")
 	}
-	activity := Activity{Id: id}
-	var err error = nil
-	if selectAll {
-		err = DB.First(&activity, "id = ?", id).Error
-	} else {
-		err = DB.Select([]string{"id", "activity_text as content", "activity_image as image"}).First(&activity, "id = ?", id).Error
-	}
-	return &activity, err
+	var buttons []*Button
+	err := DB.Where("activity_id = ?", activityId).Find(&buttons).Error
+	return buttons, err
 }
