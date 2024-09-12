@@ -2,18 +2,17 @@ package model
 
 import (
 	"errors"
-	"time"
 )
 
 type User struct {
-	Id        uint64    `gorm:"column:id;primaryKey;autoIncrement;type:bigint(20) unsigned"`
-	Name      string    `gorm:"column:name;type:varchar(255)"`
-	Username  string    `gorm:"column:username;type:varchar(255)"`
-	ChatId    string    `gorm:"column:tete_id;type:varchar(60)"`
-	Status    int       `gorm:"column:status;type:int(11)"`
-	PushOrder int       `gorm:"column:push_order;type:int(11)"`
-	CreatedAt time.Time `gorm:"column:created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at"`
+	Id        uint64 `gorm:"column:id;primaryKey;autoIncrement;type:bigint(20) unsigned"`
+	Name      string `gorm:"column:name;type:varchar(255)"`
+	Username  string `gorm:"column:username;type:varchar(255)"`
+	ChatId    string `gorm:"column:tete_id;type:varchar(60)"`
+	Status    int    `gorm:"column:status;type:int(11)"`
+	PushOrder int    `gorm:"column:push_order;type:int(11)"`
+	CreatedAt int64  `gorm:"column:created_at;type:timestamp"`
+	UpdatedAt int64  `gorm:"column:updated_at;type:timestamp"`
 }
 
 func (User) TableName() string {
