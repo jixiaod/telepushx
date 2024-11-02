@@ -113,7 +113,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	wg.Wait()
 	common.SysLog("Push process completed or timed out")
 	successRate := stats.GetSuccessRate()
-	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success rate: %.2f%%", activity.Id, activity.ShopId, stats.TotalUsers, successRate))
+	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Success rate: %.2f%%", activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, successRate))
 }
 
 func PreviewMessage(c *gin.Context) {
