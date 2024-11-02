@@ -42,7 +42,16 @@ func PushMessage(c *gin.Context) {
 		return
 	}
 
-	go doPushMessage(activity)
+	buttons, err := model.GetButtonsByActivityId(intId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error getting active buttons",
+			"data":    gin.H{},
+		})
+		return
+	}
+	go doPushMessage(activity, buttons)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -52,7 +61,7 @@ func PushMessage(c *gin.Context) {
 	//return nil
 }
 
-func doPushMessage(activity *model.Activity) {
+func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	users, err := model.GetAllUsers(0, common.GetAllUsersLimitSizeNum)
 	if err != nil {
@@ -88,7 +97,7 @@ func doPushMessage(activity *model.Activity) {
 					return
 				}
 
-				err = sendTelegramMessage(bot, u, activity)
+				err = sendTelegramMessage(bot, u, activity, buttons)
 
 				if err != nil {
 					common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
@@ -132,6 +141,15 @@ func PreviewMessage(c *gin.Context) {
 		return
 	}
 
+	buttons, err := model.GetButtonsByActivityId(activeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error getting active buttons",
+			"data":    gin.H{},
+		})
+		return
+	}
 	// Convert id from string to int
 	userID, err := strconv.Atoi(uid)
 	if err != nil {
@@ -163,7 +181,7 @@ func PreviewMessage(c *gin.Context) {
 		return
 	}
 
-	err = sendTelegramMessage(bot, user, activity)
+	err = sendTelegramMessage(bot, user, activity, buttons)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -180,7 +198,7 @@ func PreviewMessage(c *gin.Context) {
 	})
 }
 
-func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Activity) (err error) {
+func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Activity, buttons []*model.Button) (err error) {
 	chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
 	if err != nil {
 		common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
@@ -197,6 +215,9 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+images[0]))
 		photo.Caption = common.Text(activity.Content)
 		photo.ParseMode = "HTML"
+		if len(buttons) > 0 {
+			photo.ReplyMarkup = buildButtonOptions(buttons)
+		}
 		_, err = bot.Send(photo)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
@@ -207,6 +228,9 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Video))
 		video.Caption = common.Text(activity.Content)
 		video.ParseMode = "HTML"
+		if len(buttons) > 0 {
+			video.ReplyMarkup = buildButtonOptions(buttons)
+		}
 		_, err = bot.Send(video)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
@@ -218,4 +242,51 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 	}
 
 	return err
+}
+
+func buildButtonOptions(buttons []*model.Button) [][]tgbotapi.InlineKeyboardButton {
+	// 找出最大行数
+	maxLine := 0
+	for _, button := range buttons {
+		if button.OneLine > maxLine {
+			maxLine = button.OneLine
+		}
+	}
+
+	var options [][]tgbotapi.InlineKeyboardButton
+	if maxLine > 0 {
+		for line := 1; line <= maxLine; line++ {
+			var lineOption []tgbotapi.InlineKeyboardButton
+			for _, button := range buttons {
+				if button.OneLine == line {
+					lineOption = append(lineOption, buildButton(button))
+				}
+			}
+			if len(lineOption) > 0 {
+				options = append(options, lineOption)
+			}
+		}
+	}
+
+	return options
+}
+
+func buildButton(button *model.Button) tgbotapi.InlineKeyboardButton {
+	if button.Inline != "" {
+		// 处理 inline callback 按钮
+		return tgbotapi.NewInlineKeyboardButtonData(
+			button.Text,
+			button.Inline,
+		)
+	} else {
+		// 处理 URL 按钮
+		buttonLink := button.Link
+		if buttonLink == "" {
+			buttonLink = "https://t.me/Ytxzs_bot"
+		}
+		return tgbotapi.NewInlineKeyboardButtonURL(
+			button.Text,
+			buttonLink,
+		)
+	}
 }

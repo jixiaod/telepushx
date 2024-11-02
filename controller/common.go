@@ -19,7 +19,6 @@ func GetStatus(c *gin.Context) {
 			"server_address": common.ServerAddress,
 		},
 	})
-
 }
 
 func GetActiveUserCount(c *gin.Context) {
