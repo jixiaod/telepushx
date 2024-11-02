@@ -216,7 +216,8 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		photo.Caption = common.Text(activity.Content)
 		photo.ParseMode = "HTML"
 		if len(buttons) > 0 {
-			photo.ReplyMarkup = buildButtonOptions(buttons)
+			keyboard := tgbotapi.NewInlineKeyboardMarkup(buildButtonOptions(buttons)...)
+			photo.ReplyMarkup = keyboard
 		}
 		_, err = bot.Send(photo)
 		if err != nil {
@@ -229,7 +230,8 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		video.Caption = common.Text(activity.Content)
 		video.ParseMode = "HTML"
 		if len(buttons) > 0 {
-			video.ReplyMarkup = buildButtonOptions(buttons)
+			keyboard := tgbotapi.NewInlineKeyboardMarkup(buildButtonOptions(buttons)...)
+			video.ReplyMarkup = keyboard
 		}
 		_, err = bot.Send(video)
 		if err != nil {
