@@ -10,10 +10,10 @@ var ServerAddress = "http://localhost:3000"
 // All duration's unit is seconds
 // Shouldn't larger then RateLimitKeyExpirationDuration
 var (
-	GlobalApiRateLimitNum            = 60
+	GlobalApiRateLimitNum            = 600
 	GlobalApiRateLimitDuration int64 = 3 * 60
 
-	GlobalWebRateLimitNum            = 60
+	GlobalWebRateLimitNum            = 600
 	GlobalWebRateLimitDuration int64 = 3 * 60
 
 	UploadRateLimitNum            = 10
