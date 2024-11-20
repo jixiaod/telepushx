@@ -79,7 +79,8 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	stats := common.NewPushStats(len(users))
 	limiter := rate.NewLimiter(rate.Limit(common.PushJobRateLimitNum), 1)
-	ctx, cancel := context.WithTimeout(context.Background(), common.PushJobStopDuration)
+
+	ctx, cancel := context.WithTimeout(context.Background(), calculatePushJobStopDuration()-60*time.Second)
 	defer cancel()
 
 	var wg sync.WaitGroup
