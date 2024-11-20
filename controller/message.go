@@ -10,6 +10,7 @@ import (
 	"sync"
 	"telepushx/common"
 	"telepushx/model"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -295,4 +296,82 @@ func buildButton(button *model.Button) tgbotapi.InlineKeyboardButton {
 			buttonLink,
 		)
 	}
+}
+
+func CalculatePushTime(c *gin.Context) {
+	id := c.Param("id")
+
+	// Convert id from string to int
+	intId, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid ID format",
+			"data":    gin.H{},
+		})
+		return
+	}
+	duration := calculatePushJobStopDuration(intId)
+
+	c.JSON(http.StatusBadRequest, gin.H{
+		"success": true,
+		"message": "Calculate Push Job StopDuration",
+		"data":    duration,
+	})
+}
+
+func calculatePushJobStopDuration(currentActivityID int) time.Duration {
+	// Get current activity
+	currentActivity, err := model.GetActiveContentByID(currentActivityID, true)
+	if err != nil {
+		// If error, return default duration
+		return common.PushJobStopDuration
+	}
+
+	// Get all activities to find next one
+	activities, err := model.GetAllActivitiesOrderByTime()
+	if err != nil {
+		return common.PushJobStopDuration
+	}
+
+	// Find current activity index
+	currentIndex := -1
+	for i, activity := range activities {
+		if activity.Id == currentActivityID {
+			currentIndex = i
+			break
+		}
+	}
+
+	if currentIndex == -1 {
+		return common.PushJobStopDuration
+	}
+
+	// Get next activity (wrap around to first if at end)
+	nextIndex := (currentIndex + 1) % len(activities)
+	nextActivity := activities[nextIndex]
+
+	// Parse times
+	currentTime, err := time.Parse("15:04:05", currentActivity.ActivityTime)
+	if err != nil {
+		return common.PushJobStopDuration
+	}
+
+	nextTime, err := time.Parse("15:04:05", nextActivity.ActivityTime)
+	if err != nil {
+		return common.PushJobStopDuration
+	}
+
+	// Calculate duration
+	var duration time.Duration
+	if nextTime.After(currentTime) {
+		duration = nextTime.Sub(currentTime)
+	} else {
+		// Handle wrap around midnight
+		// Add 24 hours to next time
+		nextTimePlus24 := nextTime.Add(24 * time.Hour)
+		duration = nextTimePlus24.Sub(currentTime)
+	}
+
+	return duration
 }
