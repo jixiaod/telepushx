@@ -303,6 +303,7 @@ func CalculatePushTime(c *gin.Context) {
 	currentTime := time.Now().UTC()
 	duration, err := calculatePushJobStopDuration(currentTime)
 	if err != nil {
+		common.SysLog(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "Error calculating push duration",
