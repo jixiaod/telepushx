@@ -332,11 +332,12 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	// 读取并解析数据库中的时间
 	for _, activity := range rows {
 		timeStr := activity.ActivityTime
-		common.SysLog(timeStr)
+
 		if timeStr == "" {
 			return 0, fmt.Errorf("empty activity time")
 		}
 		parsedTime, err := time.Parse(layout, timeStr)
+		common.SysLog(parsedTime.String()) // Convert time.Time to string for SysLog
 		if err != nil {
 			return 0, fmt.Errorf("解析时间失败: %v", err)
 		}
@@ -352,10 +353,15 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	sort.Slice(times, func(i, j int) bool {
 		return times[i].Before(times[j])
 	})
+	// 打印排序后的时间列表
+	for i, t := range times {
+		common.SysLog(fmt.Sprintf("Sorted time[%d]: %s", i, t.Format(layout)))
+	}
 
 	// 获取当前时间的时分秒部分
 	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.UTC)
 
+	common.SysLog(fmt.Sprintf("Current time: %s", currentTime.Format(layout)))
 	// 找到当前时间之后的下一条推送时间
 	for _, t := range times {
 		if currentTime.Before(t) {
