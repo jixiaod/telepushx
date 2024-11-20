@@ -357,7 +357,7 @@ func calculatePushJobStopDuration() time.Duration {
 		if currentTime.Before(t) {
 
 			pushDuration = t.Sub(currentTime)
-			common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d", t.String(), pushDuration/1000*1000*1000))
+			common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d", t.String(), pushDuration/1000000000))
 			return pushDuration
 		}
 	}
@@ -365,6 +365,6 @@ func calculatePushJobStopDuration() time.Duration {
 	// 如果没有找到下一条时间，则当前时间已经是最后一条推送，返回到次日第一条推送时间
 	nextDayFirstTime := times[0].Add(24 * time.Hour)
 	pushDuration = nextDayFirstTime.Sub(currentTime)
-	common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d", nextDayFirstTime, pushDuration/1000*1000*1000))
+	common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d", nextDayFirstTime, pushDuration/1000000000))
 	return pushDuration
 }
