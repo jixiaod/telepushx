@@ -337,6 +337,7 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 			return 0, fmt.Errorf("empty activity time")
 		}
 		parsedTime, err := time.Parse(layout, timeStr)
+		parsedTime = parsedTime.UTC()
 		if err != nil {
 			return 0, fmt.Errorf("解析时间失败: %v", err)
 		}
