@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"telepushx/common"
 	"telepushx/model"
 	"telepushx/router"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -16,6 +18,12 @@ func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
 		common.FatalLog(err)
+	}
+
+	_, err = time.LoadLocation("Asia/Bangkok")
+	if err != nil {
+		fmt.Println("加载时区失败:", err)
+		return
 	}
 
 	common.Init()
