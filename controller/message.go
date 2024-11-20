@@ -322,9 +322,8 @@ func CalculatePushTime(c *gin.Context) {
 func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) {
 	// 查询 activity_time 数据
 	rows, err := model.GetAllActivitiesOrderByTime()
+	common.SysLog(strconv.Itoa(len(rows)))
 	if err != nil {
-		common.SysLog(err.Error())
-		common.SysLog(strconv.Itoa(len(rows))) // Convert int to string
 		return 0, err
 	}
 
@@ -333,6 +332,8 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	// 读取并解析数据库中的时间
 	for _, activity := range rows {
 		timeStr := activity.ActivityTime
+		common.SysLog(strconv.Itoa(activity.Id))
+		common.SysLog(activity.Content)
 		if timeStr == "" {
 			return 0, fmt.Errorf("empty activity time")
 		}
