@@ -34,7 +34,7 @@ func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
 
 func GetAllActivitiesOrderByTime() ([]*Activity, error) {
 	var activities []*Activity
-	err := DB.Order("activity_time ASC").Find(&activities).Error
+	err := DB.Where("status = 1").Order("activity_time ASC").Find(&activities).Error
 	return activities, err
 }
 

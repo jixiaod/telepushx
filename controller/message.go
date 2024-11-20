@@ -306,16 +306,24 @@ func CalculatePushTime(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "Error calculating push duration",
-			"data":    duration,
+			"data":    gin.H{},
 		})
 		return
 	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Calculated push duration",
+		"data":    duration,
+	})
 }
 
 func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) {
 	// 查询 activity_time 数据
 	rows, err := model.GetAllActivitiesOrderByTime()
 	if err != nil {
+		common.SysLog(err.Error())
+		common.SysLog(strconv.Itoa(len(rows))) // Convert int to string
 		return 0, err
 	}
 
