@@ -359,7 +359,7 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	}
 
 	// 获取当前时间的时分秒部分
-	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.UTC)
+	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.Local)
 
 	common.SysLog(fmt.Sprintf("Current time: %s", currentTime.Format(layout)))
 	// 找到当前时间之后的下一条推送时间
