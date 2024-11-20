@@ -365,6 +365,7 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	// 找到当前时间之后的下一条推送时间
 	for _, t := range times {
 		if currentTime.Before(t) {
+			common.SysLog(fmt.Sprintf("Before time: %s", t.Format(layout)))
 			return t.Sub(currentTime), nil
 		}
 	}
