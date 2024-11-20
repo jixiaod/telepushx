@@ -11,7 +11,7 @@ type Activity struct {
 	Video        string `gorm:"column:activity_video;type:text"`
 	Type         int    `gorm:"column:type;type:int(11) unsigned"`
 	ShopId       string `gorm:"column:shop_id;type:varchar(255)"`
-	ActivityTime string `gorm:"column:activity_video;type:text"`
+	ActivityTime string `gorm:"column:activity_time;type:varchar(60)"`
 }
 
 func (Activity) TableName() string {
