@@ -355,7 +355,7 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	})
 	// 打印排序后的时间列表
 	for i, t := range times {
-		common.SysLog(fmt.Sprintf("Sorted time[%d]: %s", i, t.Format(layout)))
+		common.SysLog(fmt.Sprintf("Sorted time[%d]: %s", i, t.String()))
 	}
 
 	// 获取当前时间的时分秒部分
