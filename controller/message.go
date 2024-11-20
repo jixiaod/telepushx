@@ -224,10 +224,22 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 				InlineKeyboard: inlineKeyboard,
 			}
 		}
-		_, err = bot.Send(photo)
+		sentMsgRes, err := bot.Send(photo)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
-			return
+		}
+
+		if activity.IsPin == 1 {
+			// 置顶消息
+			pinConfig := tgbotapi.PinChatMessageConfig{
+				ChatID:              chatID,
+				MessageID:           sentMsgRes.MessageID,
+				DisableNotification: false, // true 表示静默置顶
+			}
+			_, err = bot.Request(pinConfig)
+			if err != nil {
+				common.SysLog(fmt.Sprintf("置顶消息失败: %v", err))
+			}
 		}
 
 	} else if activity.Type == 1 {
@@ -247,7 +259,23 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		}
 		msg := tgbotapi.NewMessage(chatID, activity.Content)
 		msg.ParseMode = "HTML"
-		_, err = bot.Send(msg)
+		sentMsgRes, err := bot.Send(msg)
+
+		if err != nil {
+			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
+		}
+		if activity.IsPin == 1 {
+			// 置顶消息
+			pinConfig := tgbotapi.PinChatMessageConfig{
+				ChatID:              chatID,
+				MessageID:           sentMsgRes.MessageID,
+				DisableNotification: false, // true 表示静默置顶
+			}
+			_, err = bot.Request(pinConfig)
+			if err != nil {
+				common.SysLog(fmt.Sprintf("置顶消息失败: %v", err))
+			}
+		}
 	}
 
 	return err
