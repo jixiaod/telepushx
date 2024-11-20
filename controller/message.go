@@ -300,17 +300,8 @@ func buildButton(button *model.Button) tgbotapi.InlineKeyboardButton {
 }
 
 func CalculatePushTime(c *gin.Context) {
-	currentTime := time.Now()
-	duration, err := calculatePushJobStopDuration(currentTime)
-	if err != nil {
-		common.SysLog(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Error calculating push duration",
-			"data":    gin.H{},
-		})
-		return
-	}
+
+	duration := calculatePushJobStopDuration()
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -319,12 +310,13 @@ func CalculatePushTime(c *gin.Context) {
 	})
 }
 
-func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) {
+func calculatePushJobStopDuration() time.Duration {
+
+	pushDuration := common.PushJobStopDuration
 	// 查询 activity_time 数据
 	rows, err := model.GetAllActivitiesOrderByTime()
-	common.SysLog(strconv.Itoa(len(rows)))
 	if err != nil {
-		return 0, err
+		return pushDuration
 	}
 
 	var times []time.Time
@@ -334,43 +326,45 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 		timeStr := activity.ActivityTime
 
 		if timeStr == "" {
-			return 0, fmt.Errorf("empty activity time")
+			continue
 		}
 		parsedTime, err := time.Parse(layout, timeStr)
 		parsedTime = parsedTime.UTC()
 		if err != nil {
-			return 0, fmt.Errorf("解析时间失败: %v", err)
+			continue
 		}
 		times = append(times, parsedTime)
 	}
 
 	// 检查是否有推送时间
 	if len(times) == 0 {
-		return 0, fmt.Errorf("没有可用的推送时间")
+		return pushDuration
 	}
 
 	// 按时间排序
 	sort.Slice(times, func(i, j int) bool {
 		return times[i].Before(times[j])
 	})
-	// 打印排序后的时间列表
-	for i, t := range times {
-		common.SysLog(fmt.Sprintf("Sorted time[%d]: %s", i, t.String()))
-	}
 
 	// 获取当前时间的时分秒部分
+	currentTime := time.Now()
 	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.UTC)
 
 	common.SysLog(fmt.Sprintf("Current time: %s", currentTime.String()))
+
 	// 找到当前时间之后的下一条推送时间
 	for _, t := range times {
 		if currentTime.Before(t) {
-			common.SysLog(fmt.Sprintf("Before time: %s", t.String()))
-			return t.Sub(currentTime), nil
+
+			pushDuration = t.Sub(currentTime)
+			common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d", t.String(), pushDuration/1000*1000*1000))
+			return pushDuration
 		}
 	}
 
 	// 如果没有找到下一条时间，则当前时间已经是最后一条推送，返回到次日第一条推送时间
 	nextDayFirstTime := times[0].Add(24 * time.Hour)
-	return nextDayFirstTime.Sub(currentTime), nil
+	pushDuration = nextDayFirstTime.Sub(currentTime)
+	common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d", nextDayFirstTime, pushDuration/1000*1000*1000))
+	return pushDuration
 }
