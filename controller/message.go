@@ -332,8 +332,7 @@ func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) 
 	// 读取并解析数据库中的时间
 	for _, activity := range rows {
 		timeStr := activity.ActivityTime
-		common.SysLog(strconv.Itoa(activity.Id))
-		common.SysLog(activity.Content)
+		common.SysLog(timeStr)
 		if timeStr == "" {
 			return 0, fmt.Errorf("empty activity time")
 		}
