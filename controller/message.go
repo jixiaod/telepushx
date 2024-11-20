@@ -300,7 +300,7 @@ func buildButton(button *model.Button) tgbotapi.InlineKeyboardButton {
 }
 
 func CalculatePushTime(c *gin.Context) {
-	currentTime := time.Now().UTC()
+	currentTime := time.Now()
 	duration, err := calculatePushJobStopDuration(currentTime)
 	if err != nil {
 		common.SysLog(err.Error())
