@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"sync"
 	"telepushx/common"
@@ -299,79 +300,61 @@ func buildButton(button *model.Button) tgbotapi.InlineKeyboardButton {
 }
 
 func CalculatePushTime(c *gin.Context) {
-	id := c.Param("id")
-
-	// Convert id from string to int
-	intId, err := strconv.Atoi(id)
+	currentTime := time.Now().UTC()
+	duration, err := calculatePushJobStopDuration(currentTime)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "Invalid ID format",
-			"data":    gin.H{},
+			"message": "Error calculating push duration",
+			"data":    duration,
 		})
 		return
 	}
-	duration := calculatePushJobStopDuration(intId)
-
-	c.JSON(http.StatusBadRequest, gin.H{
-		"success": true,
-		"message": "Calculate Push Job StopDuration",
-		"data":    duration,
-	})
 }
 
-func calculatePushJobStopDuration(currentActivityID int) time.Duration {
-	// Get current activity
-	currentActivity, err := model.GetActiveContentByID(currentActivityID, true)
+func calculatePushJobStopDuration(currentTime time.Time) (time.Duration, error) {
+	// 查询 activity_time 数据
+	rows, err := model.GetAllActivitiesOrderByTime()
 	if err != nil {
-		// If error, return default duration
-		return common.PushJobStopDuration
+		return 0, err
 	}
 
-	// Get all activities to find next one
-	activities, err := model.GetAllActivitiesOrderByTime()
-	if err != nil {
-		return common.PushJobStopDuration
+	var times []time.Time
+	layout := "15:04:05" // 时间格式
+	// 读取并解析数据库中的时间
+	for _, activity := range rows {
+		timeStr := activity.ActivityTime
+		if timeStr == "" {
+			return 0, fmt.Errorf("empty activity time")
+		}
+		parsedTime, err := time.Parse(layout, timeStr)
+		if err != nil {
+			return 0, fmt.Errorf("解析时间失败: %v", err)
+		}
+		times = append(times, parsedTime)
 	}
 
-	// Find current activity index
-	currentIndex := -1
-	for i, activity := range activities {
-		if activity.Id == currentActivityID {
-			currentIndex = i
-			break
+	// 检查是否有推送时间
+	if len(times) == 0 {
+		return 0, fmt.Errorf("没有可用的推送时间")
+	}
+
+	// 按时间排序
+	sort.Slice(times, func(i, j int) bool {
+		return times[i].Before(times[j])
+	})
+
+	// 获取当前时间的时分秒部分
+	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.UTC)
+
+	// 找到当前时间之后的下一条推送时间
+	for _, t := range times {
+		if currentTime.Before(t) {
+			return t.Sub(currentTime), nil
 		}
 	}
 
-	if currentIndex == -1 {
-		return common.PushJobStopDuration
-	}
-
-	// Get next activity (wrap around to first if at end)
-	nextIndex := (currentIndex + 1) % len(activities)
-	nextActivity := activities[nextIndex]
-
-	// Parse times
-	currentTime, err := time.Parse("15:04:05", currentActivity.ActivityTime)
-	if err != nil {
-		return common.PushJobStopDuration
-	}
-
-	nextTime, err := time.Parse("15:04:05", nextActivity.ActivityTime)
-	if err != nil {
-		return common.PushJobStopDuration
-	}
-
-	// Calculate duration
-	var duration time.Duration
-	if nextTime.After(currentTime) {
-		duration = nextTime.Sub(currentTime)
-	} else {
-		// Handle wrap around midnight
-		// Add 24 hours to next time
-		nextTimePlus24 := nextTime.Add(24 * time.Hour)
-		duration = nextTimePlus24.Sub(currentTime)
-	}
-
-	return duration
+	// 如果没有找到下一条时间，则当前时间已经是最后一条推送，返回到次日第一条推送时间
+	nextDayFirstTime := times[0].Add(24 * time.Hour)
+	return nextDayFirstTime.Sub(currentTime), nil
 }
