@@ -240,6 +240,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 			if err != nil {
 				common.SysLog(fmt.Sprintf("置顶消息失败: %v", err))
 			}
+			time.Sleep(500 * time.Millisecond)
 		}
 
 	} else if activity.Type == 1 {
@@ -275,6 +276,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 			if err != nil {
 				common.SysLog(fmt.Sprintf("置顶消息失败: %v", err))
 			}
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
