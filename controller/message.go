@@ -63,6 +63,22 @@ func PushMessage(c *gin.Context) {
 	//return nil
 }
 
+func PushMessageByJob(id int) {
+
+	activity, err := model.GetActiveContentByID(id, false)
+	if err != nil {
+
+		return
+	}
+
+	buttons, err := model.GetButtonsByActivityId(id)
+	if err != nil {
+
+		return
+	}
+	go doPushMessage(activity, buttons)
+}
+
 func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	users, err := model.GetAllUsers(0, common.GetAllUsersLimitSizeNum)

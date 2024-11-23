@@ -6,6 +6,7 @@ import (
 	"telepushx/common"
 	"telepushx/model"
 	"telepushx/router"
+	"telepushx/task"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -53,4 +54,7 @@ func main() {
 	if err != nil {
 		common.FatalLog(err)
 	}
+
+	// 调用定时任务
+	task.StartPushChecker()
 }
