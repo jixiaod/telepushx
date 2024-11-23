@@ -119,11 +119,11 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				err = sendTelegramMessage(bot, u, activity, buttons)
 
 				if err != nil {
-					common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
-					stats.IncrementFailed()
-				} else {
-					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
+					//common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 					stats.IncrementSuccess()
+				} else {
+					//common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
+					stats.IncrementFailed()
 				}
 			}
 		}(user)
