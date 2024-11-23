@@ -45,6 +45,8 @@ func main() {
 	}
 
 	server := gin.Default()
+	// 调用定时任务
+	task.StartPushChecker()
 	router.SetRouter(server)
 	var port = os.Getenv("PORT")
 	if port == "" {
@@ -54,7 +56,4 @@ func main() {
 	if err != nil {
 		common.FatalLog(err)
 	}
-
-	// 调用定时任务
-	task.StartPushChecker()
 }
