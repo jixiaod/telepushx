@@ -131,7 +131,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	wg.Wait()
 	common.SysLog("Push process completed.")
-	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d", activity.Id, activity.ShopId, stats.TotalUsers, stats.FailedPush, stats.SuccessfulPush))
+	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d", activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush))
 }
 
 func PreviewMessage(c *gin.Context) {
@@ -296,7 +296,8 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
-	return
+
+	return nil
 }
 
 func buildButtonOptions(buttons []*model.Button) [][]tgbotapi.InlineKeyboardButton {
