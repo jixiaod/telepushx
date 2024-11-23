@@ -119,11 +119,11 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				err = sendTelegramMessage(bot, u, activity, buttons)
 
 				if err != nil {
-					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
-					stats.IncrementSuccess()
-				} else {
 					//common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 					stats.IncrementFailed()
+				} else {
+					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
+					stats.IncrementSuccess()
 				}
 			}
 		}(user)
@@ -131,7 +131,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	wg.Wait()
 	common.SysLog("Push process completed.")
-	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d, Success", activity.Id, activity.ShopId, stats.TotalUsers, stats.FailedPush, stats.SuccessfulPush))
+	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d", activity.Id, activity.ShopId, stats.TotalUsers, stats.FailedPush, stats.SuccessfulPush))
 }
 
 func PreviewMessage(c *gin.Context) {
@@ -220,7 +220,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 	chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
 	if err != nil {
 		common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
-		return
+		return err
 	}
 	var images []string
 	err = json.Unmarshal([]byte(activity.Image), &images)
@@ -296,8 +296,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
-
-	return err
+	return
 }
 
 func buildButtonOptions(buttons []*model.Button) [][]tgbotapi.InlineKeyboardButton {
