@@ -119,10 +119,10 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				err = sendTelegramMessage(bot, u, activity, buttons)
 
 				if err != nil {
-					//common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
+					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
 					stats.IncrementSuccess()
 				} else {
-					//common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
+					//common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 					stats.IncrementFailed()
 				}
 			}
@@ -130,9 +130,8 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	}
 
 	wg.Wait()
-	common.SysLog("Push process completed or timed out")
-	successRate := stats.GetSuccessRate()
-	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d, Success rate: %.2f%%", activity.Id, activity.ShopId, stats.TotalUsers, stats.FailedPush, stats.SuccessfulPush, successRate))
+	common.SysLog("Push process completed.")
+	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d, Success", activity.Id, activity.ShopId, stats.TotalUsers, stats.FailedPush, stats.SuccessfulPush))
 }
 
 func PreviewMessage(c *gin.Context) {
