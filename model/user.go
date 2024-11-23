@@ -53,3 +53,11 @@ func GetActiveUserCount() (int64, error) {
 	}
 	return count, nil
 }
+
+func UpdateUserStatusById(userId int, status int) error {
+	if userId == 0 {
+		return errors.New("userId 为空！")
+	}
+
+	return DB.Model(&User{}).Where("id = ?", userId).Update("status", status).Error
+}

@@ -100,7 +100,13 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	defer cancel()
 
 	var wg sync.WaitGroup
-	for _, user := range users {
+
+	queue := &model.UserQueue{}
+	queue.PushBatch(users)
+
+	// 遍历队列中的用户
+	queue.ForEach(func(user *model.User) {
+
 		wg.Add(1)
 		go func(u *model.User) {
 			defer wg.Done()
@@ -111,7 +117,8 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 			default:
 				if err := limiter.Wait(ctx); err != nil {
 					// If rate limit is exceeded, add the user back to the front of the queue
-					users = append([]*model.User{u}, users...)
+					//users = append([]*model.User{u}, users...)
+					queue.PushFront(u)
 					common.SysLog(fmt.Sprintf("Rate limit exceeded for user %s adding back to the front of the queue", u.ChatId))
 					return
 				}
@@ -127,7 +134,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				}
 			}
 		}(user)
-	}
+	})
 
 	wg.Wait()
 	common.SysLog("Push process completed.")
@@ -242,6 +249,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		sentMsgRes, err := bot.Send(photo)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
+
 			return err
 		}
 
