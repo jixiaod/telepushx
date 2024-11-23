@@ -18,7 +18,17 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// 全局变量，标识是否有正在进行中的推送
+var IsPushingMessage bool = false
+
 func PushMessage(c *gin.Context) {
+	if IsPushingMessage {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Push service is running now, please wait.",
+			"data":    gin.H{},
+		})
+	}
 
 	//user := model.User{ID: c.Param("id")}
 	id := c.Param("id")
@@ -104,6 +114,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	queue := &model.UserQueue{}
 	queue.PushBatch(users)
 
+	IsPushingMessage = true
 	// 遍历队列中的用户
 	queue.ForEach(func(user *model.User) {
 
@@ -139,6 +150,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	wg.Wait()
 	common.SysLog("Push process completed.")
 	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d", activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush))
+	IsPushingMessage = false
 }
 
 func PreviewMessage(c *gin.Context) {

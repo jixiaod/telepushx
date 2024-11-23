@@ -11,6 +11,10 @@ import (
 
 // 定义定时任务逻辑
 func CheckDatabaseAndPush() {
+	if controller.IsPushingMessage {
+		return
+	}
+
 	common.SysError(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
 	// Get current time and format to HH:mm
 	now := time.Now()
