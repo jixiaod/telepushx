@@ -11,7 +11,7 @@ import (
 
 // 定义定时任务逻辑
 func CheckDatabaseAndPush() {
-	fmt.Println("Checking database for pending push tasks:", time.Now())
+	common.SysError(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
 	// Get current time and format to HH:mm
 	now := time.Now()
 	currentTime := now.Format("15:04")
@@ -49,7 +49,8 @@ func StartPushChecker() {
 			}
 		}
 	}()
-	fmt.Println("Push checker started.")
+
+	common.SysLog("Push checker started.")
 }
 
 func dailyRoundRobin(elements []int) int {
