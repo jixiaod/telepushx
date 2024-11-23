@@ -132,7 +132,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	wg.Wait()
 	common.SysLog("Push process completed or timed out")
 	successRate := stats.GetSuccessRate()
-	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Success rate: %.2f%%", activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, successRate))
+	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d, Success rate: %.2f%%", activity.Id, activity.ShopId, stats.TotalUsers, stats.FailedPush, stats.SuccessfulPush, successRate))
 }
 
 func PreviewMessage(c *gin.Context) {
@@ -227,7 +227,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 	err = json.Unmarshal([]byte(activity.Image), &images)
 	if err != nil {
 		common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
-		return
+		return err
 	}
 
 	if len(images) > 0 && activity.Type == 0 {
@@ -243,6 +243,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		sentMsgRes, err := bot.Send(photo)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
+			return err
 		}
 
 		if activity.IsPin == 1 {
@@ -272,7 +273,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		_, err = bot.Send(video)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
-			return
+			return err
 		}
 		msg := tgbotapi.NewMessage(chatID, activity.Content)
 		msg.ParseMode = "HTML"
@@ -280,6 +281,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
+			return err
 		}
 		if activity.IsPin == 1 {
 			// 置顶消息
