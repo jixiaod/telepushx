@@ -45,6 +45,9 @@ func CheckDatabaseAndPush() {
 func StartPushChecker() {
 
 	ticker := time.NewTicker(1 * time.Minute)
+	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
+	waitDuration := time.Until(nextMinute)
+	time.Sleep(waitDuration)
 	go func() {
 		for {
 			select {
@@ -54,7 +57,7 @@ func StartPushChecker() {
 		}
 	}()
 
-	common.SysLog("Push checker started.")
+	common.SysLog(fmt.Sprintf("Push checker started at %s", time.Now().Format("2024-12-24 11:11:11")))
 }
 
 func dailyRoundRobin(elements []int) int {
