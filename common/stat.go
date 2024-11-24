@@ -1,11 +1,24 @@
 package common
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+	"time"
+)
 
 type PushStats struct {
 	TotalUsers     int32
 	SuccessfulPush int32
 	FailedPush     int32
+	PushStartTime  time.Time
+	PushEndTime    time.Time
+}
+
+func (ps *PushStats) RecordStartTime() {
+	ps.PushStartTime = time.Now()
+}
+
+func (ps *PushStats) RecordEndTime() {
+	ps.PushEndTime = time.Now()
 }
 
 func NewPushStats(totalUsers int) *PushStats {

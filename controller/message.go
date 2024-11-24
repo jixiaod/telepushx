@@ -104,6 +104,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	}
 
 	stats := common.NewPushStats(len(users))
+	stats.RecordStartTime()
 	limiter := rate.NewLimiter(rate.Limit(common.PushJobRateLimitNum), 1)
 
 	ctx, cancel := context.WithTimeout(context.Background(), calculatePushJobStopDuration()-60*time.Second)
@@ -115,8 +116,11 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	queue.PushBatch(users)
 
 	IsPushingMessage = true
+
+	loopCount := 0
 	// 遍历队列中的用户
 	queue.ForEach(func(user *model.User) {
+		loopCount++
 
 		wg.Add(1)
 		go func(u *model.User) {
@@ -145,11 +149,17 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				}
 			}
 		}(user)
+		if loopCount >= 100 {
+			loopCount = 0
+			time.Sleep(2 * time.Second)
+		}
 	})
 
 	wg.Wait()
+	stats.RecordEndTime()
 	common.SysLog("Push process completed.")
 	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d", activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush))
+	common.SysLog(fmt.Sprintf("Push process %d: startTime: %s, endTime: %s", activity.Id, stats.PushStartTime, stats.PushEndTime))
 	IsPushingMessage = false
 }
 

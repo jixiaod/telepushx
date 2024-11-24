@@ -31,6 +31,7 @@ go build -ldflags "-s -w" -o telepushx
 ```bash
 ./telepushx -help
 ./telepushx --port 3000 --log-dir ./logs 
+nohup ./telepushx --port 3000 --log-dir ./logs 2&>1 &
 ```
 
 ## API 
