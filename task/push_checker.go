@@ -15,7 +15,7 @@ func CheckDatabaseAndPush() {
 		return
 	}
 
-	common.SysError(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
+	common.SysLog(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
 	// Get current time and format to HH:mm
 	now := time.Now()
 	currentTime := now.Format("15:04")
@@ -43,11 +43,17 @@ func CheckDatabaseAndPush() {
 
 // 定时任务启动函数
 func StartPushChecker() {
-
-	ticker := time.NewTicker(1 * time.Minute)
 	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
 	waitDuration := time.Until(nextMinute)
 	time.Sleep(waitDuration)
+
+	doStartPushChecker()
+
+}
+
+func doStartPushChecker() {
+	ticker := time.NewTicker(1 * time.Minute)
+	common.SysLog(fmt.Sprintf("Push checker started at %v", time.Now()))
 	go func() {
 		for {
 			select {
@@ -56,8 +62,6 @@ func StartPushChecker() {
 			}
 		}
 	}()
-
-	common.SysLog(fmt.Sprintf("Push checker started at %s", time.Now().Format("2024-12-24 11:11:11")))
 }
 
 func dailyRoundRobin(elements []int) int {

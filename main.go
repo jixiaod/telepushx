@@ -7,6 +7,7 @@ import (
 	"telepushx/model"
 	"telepushx/router"
 	"telepushx/task"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -46,6 +47,9 @@ func main() {
 
 	server := gin.Default()
 	// 调用定时任务
+	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
+	waitDuration := time.Until(nextMinute)
+	time.Sleep(waitDuration)
 	task.StartPushChecker()
 
 	router.SetRouter(server)
