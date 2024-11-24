@@ -28,6 +28,6 @@ var (
 
 var RateLimitKeyExpirationDuration = 20 * time.Minute
 
-var GetAllUsersLimitSizeNum = 10
-var PushJobStopDuration = 1 * time.Minute
-var PushJobRateLimitNum = 30
+var GetAllUsersLimitSizeNum = 100000
+var PushJobStopDuration = 20 * time.Minute
+var PushJobRateLimitNum = 22
