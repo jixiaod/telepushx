@@ -117,6 +117,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	IsPushingMessage = true
 
+	var mu sync.Mutex
 	loopCount := 0
 	// 遍历队列中的用户
 	queue.ForEach(func(user *model.User) {
@@ -124,7 +125,10 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 		wg.Add(1)
 		go func(u *model.User) {
 			defer wg.Done()
+
+			mu.Lock()
 			loopCount++
+			mu.Unlock()
 			select {
 			case <-ctx.Done():
 				return
@@ -146,12 +150,15 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
 					stats.IncrementSuccess()
 				}
+				if loopCount >= 100 {
+					mu.Lock()
+					loopCount = 0
+					mu.Unlock()
+					common.SysLog(fmt.Sprintf("================loopCount %d", loopCount))
+					time.Sleep(5 * time.Second)
+				}
 			}
-			if loopCount >= 100 {
-				loopCount = 0
-				common.SysLog(fmt.Sprintf("================loopCount %d", loopCount))
-				time.Sleep(5 * time.Second)
-			}
+
 		}(user)
 
 	})
