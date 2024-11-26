@@ -120,12 +120,11 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	loopCount := 0
 	// 遍历队列中的用户
 	queue.ForEach(func(user *model.User) {
-		loopCount++
 
 		wg.Add(1)
 		go func(u *model.User) {
 			defer wg.Done()
-
+			loopCount++
 			select {
 			case <-ctx.Done():
 				return
@@ -148,11 +147,12 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					stats.IncrementSuccess()
 				}
 			}
+			if loopCount >= 100 {
+				loopCount = 0
+				time.Sleep(5 * time.Second)
+			}
 		}(user)
-		if loopCount >= 100 {
-			loopCount = 0
-			time.Sleep(2 * time.Second)
-		}
+
 	})
 
 	wg.Wait()
