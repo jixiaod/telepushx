@@ -296,19 +296,12 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 				InlineKeyboard: inlineKeyboard,
 			}
 		}
-		_, err = bot.Send(video)
+		sentMsgRes, err := bot.Send(video)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
 			return err
 		}
-		msg := tgbotapi.NewMessage(chatID, activity.Content)
-		msg.ParseMode = "HTML"
-		sentMsgRes, err := bot.Send(msg)
 
-		if err != nil {
-			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
-			return err
-		}
 		if activity.IsPin == 1 {
 			// 置顶消息
 			pinConfig := tgbotapi.PinChatMessageConfig{
