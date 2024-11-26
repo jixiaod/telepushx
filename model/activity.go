@@ -8,7 +8,7 @@ type Activity struct {
 	Id           int    `gorm:"column:id;primaryKey;autoIncrement;type:int(10) unsigned"`
 	Content      string `gorm:"column:activity_text;type:text"`
 	Image        string `gorm:"column:activity_image;type:text"`
-	Video        string `gorm:"column:activity_video;type:text"`
+	Video        string `gorm:"column:mp4;type:text"`
 	Type         int    `gorm:"column:type;type:int(11) unsigned"`
 	IsPin        int    `gorm:"column:is_pin;type:int(11) unsigned"`
 	ShopId       string `gorm:"column:shop_id;type:varchar(255)"`
@@ -28,7 +28,7 @@ func GetActiveContentByID(id int, selectAll bool) (*Activity, error) {
 	if selectAll {
 		err = DB.First(&activity, "id = ?", id).Error
 	} else {
-		err = DB.Select([]string{"id", "activity_text", "activity_image", "type", "is_pin", "shop_id"}).First(&activity, "id = ?", id).Error
+		err = DB.Select([]string{"id", "activity_text", "activity_image", "mp4", "type", "is_pin", "shop_id"}).First(&activity, "id = ?", id).Error
 	}
 	return &activity, err
 }

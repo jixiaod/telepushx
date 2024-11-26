@@ -133,7 +133,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					// If rate limit is exceeded, add the user back to the front of the queue
 					//users = append([]*model.User{u}, users...)
 					queue.PushFront(u)
-					common.SysLog(fmt.Sprintf("Rate limit exceeded for user %s adding back to the front of the queue", u.ChatId))
+					//common.SysLog(fmt.Sprintf("Rate limit exceeded for user %s adding back to the front of the queue", u.ChatId))
 					return
 				}
 
@@ -146,6 +146,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
 					stats.IncrementSuccess()
 				}
+				return
 			}
 		}(user)
 
