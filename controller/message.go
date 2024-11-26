@@ -257,7 +257,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 
 	if len(images) > 0 && activity.Type == 0 {
 		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+images[0]))
-		photo.Caption = common.Text(activity.Content)
+		photo.Caption = common.Text("亲爱的" + u.Name + ":\n" + activity.Content)
 		photo.ParseMode = "HTML"
 		if len(buttons) > 0 {
 			inlineKeyboard := buildButtonOptions(buttons)
@@ -288,7 +288,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 
 	} else if activity.Type == 1 {
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Video))
-		video.Caption = common.Text(activity.Content)
+		video.Caption = common.Text("亲爱的" + u.Name + ":\n" + activity.Content)
 		video.ParseMode = "HTML"
 		if len(buttons) > 0 {
 			inlineKeyboard := buildButtonOptions(buttons)
