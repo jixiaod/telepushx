@@ -117,13 +117,14 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	IsPushingMessage = true
 
-	var mu sync.Mutex
 	loopCount := 0
 	// 遍历队列中的用户
 	queue.ForEach(func(user *model.User) {
 
 		wg.Add(1)
 		go func(u *model.User) {
+
+			loopCount++
 			defer wg.Done()
 
 			select {
@@ -137,9 +138,6 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					common.SysLog(fmt.Sprintf("Rate limit exceeded for user %s adding back to the front of the queue", u.ChatId))
 					return
 				}
-				mu.Lock()
-				loopCount++
-				mu.Unlock()
 
 				err = sendTelegramMessage(bot, u, activity, buttons)
 
@@ -150,15 +148,12 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
 					stats.IncrementSuccess()
 				}
-				if loopCount >= 100 {
-					mu.Lock()
-					loopCount = 0
-					mu.Unlock()
-					common.SysLog(fmt.Sprintf("================loopCount %d", loopCount))
-					time.Sleep(5 * time.Second)
-				}
 			}
-
+			if loopCount >= 100 {
+				common.SysLog(fmt.Sprintf("================loopCount %d", loopCount))
+				loopCount = 0
+				time.Sleep(5 * time.Second)
+			}
 		}(user)
 
 	})
