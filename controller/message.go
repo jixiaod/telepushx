@@ -149,6 +149,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 			}
 			if loopCount >= 100 {
 				loopCount = 0
+				common.SysLog(fmt.Sprintf("================loopCount %d", loopCount))
 				time.Sleep(5 * time.Second)
 			}
 		}(user)
