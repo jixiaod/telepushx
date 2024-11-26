@@ -117,14 +117,12 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	IsPushingMessage = true
 
-	loopCount := 0
 	// 遍历队列中的用户
 	queue.ForEach(func(user *model.User) {
 
 		wg.Add(1)
 		go func(u *model.User) {
 
-			loopCount++
 			defer wg.Done()
 
 			select {
@@ -148,11 +146,6 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
 					stats.IncrementSuccess()
 				}
-			}
-			if loopCount >= 100 {
-				common.SysLog(fmt.Sprintf("================loopCount %d", loopCount))
-				loopCount = 0
-				time.Sleep(5 * time.Second)
 			}
 		}(user)
 
