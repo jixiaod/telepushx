@@ -126,9 +126,6 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 		go func(u *model.User) {
 			defer wg.Done()
 
-			mu.Lock()
-			loopCount++
-			mu.Unlock()
 			select {
 			case <-ctx.Done():
 				return
@@ -140,6 +137,9 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					common.SysLog(fmt.Sprintf("Rate limit exceeded for user %s adding back to the front of the queue", u.ChatId))
 					return
 				}
+				mu.Lock()
+				loopCount++
+				mu.Unlock()
 
 				err = sendTelegramMessage(bot, u, activity, buttons)
 
