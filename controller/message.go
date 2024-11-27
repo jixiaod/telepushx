@@ -257,13 +257,13 @@ func PreviewMessage(c *gin.Context) {
 func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Activity, buttons []*model.Button) (err error) {
 	chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
 	if err != nil {
-		common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
+		//common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
 		return err
 	}
 	var images []string
 	err = json.Unmarshal([]byte(activity.Image), &images)
 	if err != nil {
-		common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
+		//common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
 		return err
 	}
 
@@ -279,8 +279,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		}
 		sentMsgRes, err := bot.Send(photo)
 		if err != nil {
-			common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
-
+			//common.SysLog(fmt.Sprintf("Error sending photo message to user %s: %v", u.ChatId, err))
 			return err
 		}
 
@@ -310,7 +309,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		}
 		sentMsgRes, err := bot.Send(video)
 		if err != nil {
-			common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
+			//common.SysLog(fmt.Sprintf("Error sending video message to user %s: %v", u.ChatId, err))
 			return err
 		}
 
