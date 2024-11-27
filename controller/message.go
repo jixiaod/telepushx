@@ -147,7 +147,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					if strings.Contains(err.Error(), "Too Many Requests") {
 						queue.PushFront(u) // Re-add user to the front of the queue
 					} else {
-						//common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
+						common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 						stats.IncrementFailed()
 
 						if strings.Contains(err.Error(), "Forbidden: bot was blocked by the user ") {
@@ -155,7 +155,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 						}
 					}
 				} else {
-					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
+					//common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
 					stats.IncrementSuccess()
 				}
 				return
@@ -269,7 +269,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 
 	if len(images) > 0 && activity.Type == 0 {
 		photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+images[0]))
-		photo.Caption = common.Text("亲爱的" + u.Name + ":\n" + activity.Content)
+		photo.Caption = "亲爱的" + common.FilterName(u.Name) + ":\n" + common.Text(activity.Content)
 		photo.ParseMode = "HTML"
 		if len(buttons) > 0 {
 			inlineKeyboard := buildButtonOptions(buttons)
@@ -299,7 +299,7 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 
 	} else if activity.Type == 1 {
 		video := tgbotapi.NewVideo(chatID, tgbotapi.FileURL(os.Getenv("APP_IMAGE_BASE_URL")+"/uploads/"+activity.Video))
-		video.Caption = common.Text("亲爱的" + u.Name + ":\n" + activity.Content)
+		video.Caption = "亲爱的" + common.FilterName(u.Name) + ":\n" + common.Text(activity.Content)
 		video.ParseMode = "HTML"
 		if len(buttons) > 0 {
 			inlineKeyboard := buildButtonOptions(buttons)

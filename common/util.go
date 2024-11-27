@@ -58,3 +58,7 @@ func Text(content string) string {
 
 	return result
 }
+
+func FilterName(input string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(input, "<", ""), ">", "")
+}
