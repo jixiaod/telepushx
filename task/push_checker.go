@@ -15,7 +15,7 @@ func CheckDatabaseAndPush() {
 		return
 	}
 
-	common.SysLog(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
+	//common.SysLog(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
 	// Get current time and format to HH:mm
 	now := time.Now()
 	currentTime := now.Format("15:04")
