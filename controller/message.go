@@ -150,7 +150,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 						common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 						stats.IncrementFailed()
 
-						if strings.Contains(err.Error(), "Forbidden: bot was blocked by the user ") {
+						if strings.Contains(err.Error(), "Forbidden: bot was blocked by the user") {
 							model.UpdateUserStatusById(int(u.Id), 0)
 						}
 					}
