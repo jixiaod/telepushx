@@ -106,11 +106,9 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 	stats := common.NewPushStats(len(users))
 	stats.RecordStartTime()
-
+	limiter := rate.NewLimiter(rate.Limit(common.PushJobRateLimitNum), 1)
 	if activity.IsPin == 1 {
-		limiter := rate.NewLimiter(rate.Limit(common.PinPushJobRateLimitNum), 1)
-	} else {
-		limiter := rate.NewLimiter(rate.Limit(common.PushJobRateLimitNum), 1)
+		limiter = rate.NewLimiter(rate.Limit(common.PinPushJobRateLimitNum), 1)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), calculatePushJobStopDuration()-30*time.Second)
@@ -148,11 +146,13 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				if err != nil {
 					if strings.Contains(err.Error(), "Too Many Requests") {
 						queue.PushFront(u) // Re-add user to the front of the queue
-					} else if strings.Contains(err.Error(), "Forbidden: bot was blocked by the user ") {
-						model.UpdateUserStatusById(int(u.Id), 0)
 					} else {
 						//common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 						stats.IncrementFailed()
+
+						if strings.Contains(err.Error(), "Forbidden: bot was blocked by the user ") {
+							model.UpdateUserStatusById(int(u.Id), 0)
+						}
 					}
 				} else {
 					common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
