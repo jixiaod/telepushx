@@ -59,5 +59,5 @@ func UpdateUserStatusById(userId int, status int) error {
 		return errors.New("userId 为空！")
 	}
 
-	return DB.Model(&User{}).Where("id = ?", userId).Update("status", status).Error
+	return DB.Model(&User{}).Where("id = ?", userId).UpdateColumn("status", status).Error
 }
