@@ -150,7 +150,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 						common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 						stats.IncrementFailed()
 
-						if strings.Contains(err.Error(), "Forbidden: bot was blocked by the user") {
+						if strings.Contains(err.Error(), "Forbidden") {
 							model.UpdateUserStatusById(int(u.Id), 0)
 						}
 					}
@@ -257,7 +257,7 @@ func PreviewMessage(c *gin.Context) {
 func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Activity, buttons []*model.Button) (err error) {
 	chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
 	if err != nil {
-		//common.SysError(fmt.Sprintf("Error parsing image JSON for user %s: %v", u.ChatId, err))
+		common.SysError(fmt.Sprintf("Error parsing image JSON for user %d %s: %v", u.Id, u.ChatId, err))
 		return err
 	}
 	var images []string
