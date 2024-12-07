@@ -144,13 +144,14 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				err = sendTelegramMessage(bot, u, activity, buttons)
 
 				if err != nil {
-					if strings.Contains(err.Error(), "Too Many Requests") {
+					errMessage := err.Error() // 缓存错误消息，避免重复调用
+					if strings.Contains(errMessage, "Too Many Requests") {
 						queue.PushFront(u) // Re-add user to the front of the queue
 					} else {
 						common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
 						stats.IncrementFailed()
 
-						if strings.Contains(err.Error(), "Forbidden") {
+						if strings.Contains(errMessage, "Forbidden") {
 							model.UpdateUserStatusById(int(u.Id), 0)
 						}
 					}
