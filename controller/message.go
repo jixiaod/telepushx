@@ -148,7 +148,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 					if strings.Contains(errMessage, "Too Many Requests") {
 						queue.PushFront(u) // Re-add user to the front of the queue
 					} else {
-						common.SysLog(fmt.Sprintf("Error sending message to user %s: %v", u.ChatId, err))
+						common.SysLog(fmt.Sprintf("Error sending %d to user %s: %v", activity.Id, u.ChatId, err))
 						stats.IncrementFailed()
 
 						if strings.Contains(errMessage, "Forbidden") {
