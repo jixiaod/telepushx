@@ -45,6 +45,12 @@ func main() {
 		common.FatalLog(err)
 	}
 
+	// 调用定时任务
+	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
+	waitDuration := time.Until(nextMinute)
+	time.Sleep(waitDuration)
+	task.StartPushChecker()
+
 	server := gin.Default()
 	router.SetRouter(server)
 	var port = os.Getenv("PORT")
@@ -55,10 +61,4 @@ func main() {
 	if err != nil {
 		common.FatalLog(err)
 	}
-
-	// 调用定时任务
-	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
-	waitDuration := time.Until(nextMinute)
-	time.Sleep(waitDuration)
-	task.StartPushChecker()
 }
