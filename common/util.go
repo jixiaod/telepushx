@@ -9,8 +9,6 @@ import (
 
 func Text(content string) string {
 
-	return content
-
 	doc, err := html.Parse(strings.NewReader(content))
 	if err != nil {
 		return content // 如果解析失败，返回原始字符串
