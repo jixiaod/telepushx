@@ -20,9 +20,9 @@ func Text(content string) string {
 		if n.Type == html.ElementNode {
 			switch n.Data {
 			case "p":
-				buf.WriteString("\n") // 在<p>标签前添加换行
+				buf.WriteString("") // 在<p>标签前添加换行
 			case "br":
-				buf.WriteString("\n")
+				buf.WriteString("")
 			}
 		} else if n.Type == html.TextNode {
 			buf.WriteString(n.Data)
