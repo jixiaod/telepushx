@@ -31,7 +31,7 @@ func Text(content string) string {
 			f(c)
 		}
 		if n.Type == html.ElementNode && n.Data == "p" {
-			buf.WriteString("") // 在</p>标签后添加换行
+			buf.WriteString("\n") // 在</p>标签后添加换行
 		}
 	}
 	f(doc)
