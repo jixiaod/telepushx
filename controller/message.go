@@ -238,6 +238,7 @@ func PreviewMessage(c *gin.Context) {
 		return
 	}
 
+	user.Name = "预览用户"
 	err = sendTelegramMessage(bot, user, activity, buttons)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
