@@ -20,8 +20,7 @@ func (User) TableName() string {
 }
 
 func GetAllUsers(startIdx int, num int) (users []*User, err error) {
-
-	err = DB.Where("status = 1").Order("push_order desc").Limit(num).Offset(startIdx).Select([]string{"id", "name", "tete_id", "status"}).Find(&users).Error
+	err = DB.Where("status = 1").Order("push_order desc, lastlog desc").Limit(num).Offset(startIdx).Select([]string{"id", "name", "tete_id", "status"}).Find(&users).Error
 	return users, err
 }
 
