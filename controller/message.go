@@ -146,6 +146,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 				if err != nil {
 					errMessage := err.Error() // 缓存错误消息，避免重复调用
 					if strings.Contains(errMessage, "Too Many Requests") {
+						common.SysLog(fmt.Sprintf("Too Many Requests %d to user %s: %v", activity.Id, u.ChatId, err))
 						queue.PushFront(u) // Re-add user to the front of the queue
 					} else {
 						common.SysLog(fmt.Sprintf("Error sending %d to user %s: %v", activity.Id, u.ChatId, err))
