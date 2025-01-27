@@ -35,27 +35,17 @@ func (q *UserQueue) PushBatch(users []*User) {
 	// 将用户列表追加到队列
 	q.users = append(q.users, users...)
 }
-func (q *UserQueue) ForEachWithRetry(f func(*User)) {
+func (q *UserQueue) ForEachSkipFront(f func(*User), skipFrontCount int) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	// Create a slice to keep track of already processed users
-	processed := make(map[*User]struct{})
-	var retryQueue []*User
-
-	for _, user := range q.users {
-		if _, exists := processed[user]; !exists {
-			// Execute the function and check if it needs to retry
-			if f(user) {
-				// If the function returns true, add the user to the retry queue
-				retryQueue = append(retryQueue, user)
-			}
-			processed[user] = struct{}{}
-		}
+	// Calculate the number of users to skip from the front
+	startIndex := skipFrontCount
+	if startIndex >= len(q.users) {
+		return // No users to iterate over
 	}
 
-	// Retry processing the users that need to be retried
-	for _, user := range retryQueue {
+	for _, user := range q.users[startIndex:] {
 		f(user)
 	}
 }
