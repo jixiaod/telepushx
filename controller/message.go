@@ -122,7 +122,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	IsPushingMessage = true
 
 	// 遍历队列中的用户
-	queue.ForEach(func(user *model.User) {
+	queue.ForEachSkipFront(func(user *model.User) {
 
 		wg.Add(1)
 		go func(u *model.User) {
@@ -145,9 +145,15 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
 				if err != nil {
 					errMessage := err.Error() // 缓存错误消息，避免重复调用
-					if strings.Contains(errMessage, "Too Many Requests") {
+
+					if strings.Contains(errMessage, "Gateway Timeout") {
+						common.SysLog(fmt.Sprintf("Gateway Timeout %d to user %s: %v", activity.Id, u.ChatId, err))
+						queue.PushFront(u) // Re-add user to the front of the queue
+						time.Sleep(10 * time.Second)
+					} else if strings.Contains(errMessage, "Too Many Requests") || strings.Contains(errMessage, "Gateway Timeout") {
 						common.SysLog(fmt.Sprintf("Too Many Requests %d to user %s: %v", activity.Id, u.ChatId, err))
 						queue.PushFront(u) // Re-add user to the front of the queue
+						time.Sleep(1 * time.Second)
 					} else {
 						common.SysLog(fmt.Sprintf("Error sending %d to user %s: %v", activity.Id, u.ChatId, err))
 						stats.IncrementFailed()
