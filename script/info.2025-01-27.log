@@ -1,0 +1,120 @@
+[SYS] 2024/09/12 - 21:19:28 | TelepushX v0.0.1 started 
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/status               --> telepushx/controller.GetStatus (5 handlers)
+[GIN-debug] GET    /api/user-count           --> telepushx/controller.GetActiveUserCount (5 handlers)
+[GIN-debug] POST   /api/push/:id             --> telepushx/controller.PushMessage (5 handlers)
+[GIN-debug] POST   /api/preview/:id/:uid     --> telepushx/controller.PreviewMessage (5 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :3001
+[GIN] 2024/09/12 - 21:19:39 | 200 |   18.770083ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:40 | 200 |   19.841167ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:40 | 200 |   16.110791ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:40 | 200 |   14.231125ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:40 | 200 |   11.445667ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:41 | 200 |   10.144125ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:41 | 200 |    10.00425ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:41 | 200 |   19.193542ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:41 | 200 |   15.390334ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:42 | 200 |   21.303375ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:42 | 200 |    9.059083ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:42 | 429 |   11.108583ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:42 | 429 |      11.448ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:43 | 429 |   14.141416ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:19:48 | 429 |   20.464875ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:19:54 | 429 |   12.671792ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:19:57 | 429 |   14.048584ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:19:58 | 429 |     8.26775ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:19:58 | 429 |    9.530208ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:19:58 | 429 |   10.521042ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:00 | 429 |     9.92475ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:04 | 429 |     7.28075ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:15 | 429 |   12.742417ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:16 | 429 |   11.386416ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:16 | 429 |    9.962292ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:16 | 429 |    5.686291ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:28 | 429 |     13.6515ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:30 | 429 |   11.774791ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:31 | 429 |   12.105083ms |             ::1 | GET      "/api/status"
+[GIN] 2024/09/12 - 21:20:35 | 429 |   10.511583ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:20:36 | 429 |   10.166125ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:20:37 | 429 |    7.786917ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:20:39 | 429 |    4.256333ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:16 | 429 |    9.591125ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:16 | 429 |   15.062459ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:16 | 429 |   14.727834ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:17 | 429 |   15.178042ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:17 | 429 |    7.574792ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:17 | 429 |    8.224875ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:18 | 429 |   11.459917ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:18 | 429 |     4.71975ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:18 | 429 |   10.241542ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:18 | 429 |    7.233792ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:18 | 429 |    6.115167ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:19 | 429 |      9.0295ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:19 | 429 |    7.369625ms |             ::1 | GET      "/api/user-count"
+[SYS] 2024/09/12 - 21:21:26 | TelepushX v0.0.1 started 
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/status               --> telepushx/controller.GetStatus (5 handlers)
+[GIN-debug] GET    /api/user-count           --> telepushx/controller.GetActiveUserCount (5 handlers)
+[GIN-debug] POST   /api/push/:id             --> telepushx/controller.PushMessage (5 handlers)
+[GIN-debug] POST   /api/preview/:id/:uid     --> telepushx/controller.PreviewMessage (5 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :3001
+[SYS] 2024/09/12 - 21:21:36 | TelepushX v0.0.1 started 
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/status               --> telepushx/controller.GetStatus (5 handlers)
+[GIN-debug] GET    /api/user-count           --> telepushx/controller.GetActiveUserCount (5 handlers)
+[GIN-debug] POST   /api/push/:id             --> telepushx/controller.PushMessage (5 handlers)
+[GIN-debug] POST   /api/preview/:id/:uid     --> telepushx/controller.PreviewMessage (5 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :3001
+[GIN] 2024/09/12 - 21:21:38 | 429 |    7.053208ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:38 | 429 |    7.627458ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:39 | 429 |   11.278583ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:39 | 429 |   12.727667ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:39 | 429 |   16.885958ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:39 | 429 |   16.076625ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:40 | 429 |   10.593292ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:40 | 429 |   13.237583ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:40 | 429 |    9.294125ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:40 | 429 |   14.085042ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:57 | 429 |   16.990291ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:57 | 429 |   14.611416ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:57 | 429 |   12.106416ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:57 | 429 |   13.094625ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:21:58 | 429 |    5.021375ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:22:40 | 429 |   15.699834ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:22:41 | 429 |   12.399166ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:24:01 | 429 |   20.227083ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:24:32 | 429 |   16.425667ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:24:33 | 429 |   16.264042ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:25:54 | 429 |   13.958667ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:27:51 | 429 |   17.561291ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:27:55 | 429 |   15.125416ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:28:06 | 429 |   13.275584ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:28:38 | 200 |   14.487583ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:28:51 | 200 |   16.847416ms |             ::1 | GET      "/api/user-count"
+[GIN] 2024/09/12 - 21:28:55 | 200 |   11.232625ms |             ::1 | GET      "/api/status"
+Gateway Timeout
+Gateway Timeout
+Gateway Timeout
+Gateway Timeout
+Gateway Timeout
