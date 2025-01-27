@@ -3,6 +3,7 @@
 LOG_DIR="logs/"
 PING_RESULTS_FILE="ping_results.log"
 
+
 # Function to monitor today's logs for "Gateway Timeout" in new entries only
 monitor_logs() {
     local last_size=0
@@ -22,18 +23,6 @@ monitor_logs() {
 }
 
 
-# Function to monitor logs for "Gateway Timeout"
-monitor_logs() {
-    while true; do
-        for file in "$LOG_DIR"info.*.log; do
-            if grep -q "Gateway Timeout" "$file"; then
-                ping_hosts
-            fi
-        done
-        sleep 10 # Check every 10 seconds
-    done
-}
-
 # Function to ping hosts and log results
 ping_hosts() {
     for host in "www.google.com" "api.telegram.org"; do
@@ -41,7 +30,6 @@ ping_hosts() {
         log_ping_results "$host" "$result"
     done
 }
-
 
 
 # Function to log ping results
