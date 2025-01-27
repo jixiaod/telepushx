@@ -122,7 +122,12 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	IsPushingMessage = true
 
 	// 遍历队列中的用户
-	queue.ForEachSkipFront(func(user *model.User) {
+	for {
+
+		if queue.HasNext() == false {
+			break
+		}
+		user := queue.Pop()
 
 		wg.Add(1)
 		go func(u *model.User) {
@@ -170,7 +175,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 			}
 		}(user)
 
-	})
+	}
 
 	wg.Wait()
 	stats.RecordEndTime()

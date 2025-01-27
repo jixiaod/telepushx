@@ -28,26 +28,18 @@ func (q *UserQueue) Pop() *User {
 	return u
 }
 
+func (q *UserQueue) HasNext() bool {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return len(q.users) > 0
+}
+
 func (q *UserQueue) PushBatch(users []*User) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	// 将用户列表追加到队列
 	q.users = append(q.users, users...)
-}
-func (q *UserQueue) ForEachSkipFront(f func(*User), skipFrontCount int) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
-	// Calculate the number of users to skip from the front
-	startIndex := skipFrontCount
-	if startIndex >= len(q.users) {
-		return // No users to iterate over
-	}
-
-	for _, user := range q.users[startIndex:] {
-		f(user)
-	}
 }
 
 // 遍历队列中的所有用户
