@@ -1,6 +1,7 @@
 #!/bin/bash
 
 LOG_DIR="logs/"
+PING_RESULTS_FILE="ping_results.log"
 
 # Function to monitor today's logs for "Gateway Timeout" in new entries only
 monitor_logs() {
@@ -41,13 +42,18 @@ ping_hosts() {
     done
 }
 
+
+
 # Function to log ping results
 log_ping_results() {
     local host="$1"
     local result="$2"
+    current_time=$(date +"%Y-%m-%d %H:%M:%S")
+    echo "Current time: $current_time" >> "$PING_RESULTS_FILE"
     echo "Ping result for $host:" >> "$PING_RESULTS_FILE"
     echo "$result" >> "$PING_RESULTS_FILE"
     echo "" >> "$PING_RESULTS_FILE"
+
 }
 
 # Start monitoring logs
