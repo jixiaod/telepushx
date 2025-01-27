@@ -124,7 +124,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	// 遍历队列中的用户
 	for {
 
-		if queue.HasNext() == false {
+		if !queue.HasNext() {
 			break
 		}
 		user := queue.Pop()
