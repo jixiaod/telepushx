@@ -1,7 +1,25 @@
 #!/bin/bash
 
 LOG_DIR="logs/"
-PING_RESULTS_FILE="ping_results.log"
+
+# Function to monitor today's logs for "Gateway Timeout" in new entries only
+monitor_logs() {
+    local last_size=0
+    while true; do
+        TODAY=$(date +"%Y-%m-%d")
+        LOG_FILE="$LOG_DIR/info.$TODAY.log"
+        
+        if [ -f "$LOG_FILE" ]; then
+            current_size=$(stat -c%s "$LOG_FILE")
+            if [ "$current_size" -gt "$last_size" ]; then
+                tail -n $((current_size - last_size)) "$LOG_FILE" | grep -q "Gateway Timeout" && ping_hosts
+            fi
+            last_size=$current_size
+        fi
+        sleep 10 # Check every 10 seconds
+    done
+}
+
 
 # Function to monitor logs for "Gateway Timeout"
 monitor_logs() {
