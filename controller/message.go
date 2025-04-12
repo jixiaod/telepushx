@@ -255,7 +255,7 @@ func PreviewMessage(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"message": "Error sending message",
+			"message": err.Error(),
 			"data":    gin.H{},
 		})
 		return
