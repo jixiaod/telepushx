@@ -165,7 +165,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 						}
 					}
 				} else {
-					//common.SysLog(fmt.Sprintf("Message sent successfully to user %s", u.ChatId))
+					common.SysLog(fmt.Sprintf("Message sent successfully %d to user %s", activity.Id, u.ChatId))
 					stats.IncrementSuccess()
 				}
 				return
