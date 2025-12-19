@@ -6,6 +6,7 @@ import (
 
 type User struct {
 	Id        uint64 `gorm:"column:id;primaryKey;autoIncrement;type:bigint(20) unsigned"`
+	RegionId  int    `gorm:"column:region;type:int(10) unsigned"`
 	Name      string `gorm:"column:name;type:varchar(255)"`
 	Username  string `gorm:"column:username;type:varchar(255)"`
 	ChatId    string `gorm:"column:tete_id;type:varchar(60)"`
@@ -20,7 +21,20 @@ func (User) TableName() string {
 }
 
 func GetAllUsers(startIdx int, num int) (users []*User, err error) {
-	err = DB.Where("status = 1 AND tete_id > 0").Order("push_order desc, lastlog desc").Limit(num).Offset(startIdx).Select([]string{"id", "name", "tete_id", "status"}).Find(&users).Error
+	err = DB.Where("status = 1 AND tete_id > 0").Order("push_order desc, lastlog desc").Limit(num).Offset(startIdx).Select([]string{"id", "region_id", "name", "tete_id", "status"}).Find(&users).Error
+	return users, err
+}
+
+func GetAllUsersWithRegionId(regionId int, startIdx int, num int) (users []*User, err error) {
+	err = DB.
+		Where("status = 1 AND tete_id > 0 AND region_id = ?", regionId).
+		Order("push_order desc, lastlog desc").
+		Limit(num).
+		Offset(startIdx).
+		Select([]string{"id", "region_id", "name", "tete_id", "status"}).
+		Find(&users).
+		Error
+
 	return users, err
 }
 
@@ -39,7 +53,7 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 	if selectAll {
 		err = DB.First(&user, "id = ?", id).Error
 	} else {
-		err = DB.Select([]string{"id", "name", "tete_id", "status"}).First(&user, "id = ?", id).Error
+		err = DB.Select([]string{"id", "region_id", "name", "tete_id", "status"}).First(&user, "id = ?", id).Error
 	}
 	return &user, err
 }

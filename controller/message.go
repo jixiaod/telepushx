@@ -92,7 +92,7 @@ func PushMessageByJob(id int) {
 
 func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 
-	users, err := model.GetAllUsers(0, common.GetAllUsersLimitSizeNum)
+	users, err := model.GetAllUsersWithRegionId(activity.RegionId , 0, common.GetAllUsersLimitSizeNum)
 	if err != nil {
 		common.SysError(fmt.Sprintf("Error getting users: %v", err))
 		return

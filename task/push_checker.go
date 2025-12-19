@@ -31,14 +31,32 @@ func CheckDatabaseAndPush() {
 	if len(activities) == 0 {
 		return
 	}
-	selectedActivityIds := make([]int, len(activities))
-	for i, activity := range activities {
-		selectedActivityIds[i] = activity.Id
+	// 1. 按 region_id 分组
+	regionActivities := make(map[int][]int)
+
+	for _, activity := range activities {
+		regionActivities[activity.RegionId] = append(
+			regionActivities[activity.RegionId],
+			activity.Id,
+		)
 	}
-	selectedActivityId := dailyRoundRobin(selectedActivityIds)
 
-	go controller.PushMessageByJob(selectedActivityId)
+	// 2. 每个 region 单独轮询
+	for regionId, activityIds := range regionActivities {
+		if len(activityIds) == 0 {
+			continue
+		}
 
+		selectedActivityId := dailyRoundRobin(activityIds)
+
+		
+		common.SysLog(fmt.Sprintf(
+		 	"Region %d select activity %d at %s",
+		 	regionId, selectedActivityId, currentTime,
+		))
+
+		go controller.PushMessageByJob(selectedActivityId)
+	}
 }
 
 // 定时任务启动函数
@@ -48,7 +66,6 @@ func StartPushChecker() {
 	time.Sleep(waitDuration)
 
 	doStartPushChecker()
-
 }
 
 func doStartPushChecker() {
