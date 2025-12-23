@@ -43,7 +43,9 @@ func GetAllActivitiesOrderByTime() ([]*Activity, error) {
 
 func GetActivitiesByActivityTime(currentTime string) ([]*Activity, error) {
 	var activities []*Activity
-	err := DB.Where("status = 1").Where("activity_time = ?", currentTime).Find(&activities).Error
+	//err := DB.Where("status = 1").Where("activity_time = ?", currentTime).Find(&activities).Error
+	err := DB.Where("status = 1").Where("DATE_FORMAT(activity_time, '%H:%i:00') = ?", currentTime.Format("15:04:00")).Find(&activities).Error
+
 	return activities, err
 }
 
