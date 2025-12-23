@@ -6,7 +6,7 @@ import (
 
 type User struct {
 	Id        uint64 `gorm:"column:id;primaryKey;autoIncrement;type:bigint(20) unsigned"`
-	RegionId  int    `gorm:"column:region;type:int(10) unsigned"`
+	RegionId  int    `gorm:"column:region_id;type:int(10) unsigned"`
 	Name      string `gorm:"column:name;type:varchar(255)"`
 	Username  string `gorm:"column:username;type:varchar(255)"`
 	ChatId    string `gorm:"column:tete_id;type:varchar(60)"`

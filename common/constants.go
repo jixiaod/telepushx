@@ -3,7 +3,7 @@ package common
 import "time"
 
 var StartTime = time.Now().Unix() // unit: second
-var Version = "v0.0.1"
+var Version = "v1.0.1"
 var SystemName = "Telegram Message Push Service"
 var ServerAddress = "http://localhost:3000"
 
