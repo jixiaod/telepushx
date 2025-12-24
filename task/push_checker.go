@@ -18,7 +18,7 @@ func CheckDatabaseAndPush() {
 	//common.SysLog(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
 	// Get current time and format to HH:mm
 	now := time.Now()
-	currentTime := now.Format("15:04")
+	currentTime := now.Format("15:04:00")
 
 	// 先把过期的活动置 status=0
 	if err := model.ExpireActivitiesByTime(now, currentTime); err != nil {

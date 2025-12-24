@@ -64,6 +64,7 @@ func GetActivitiesByActivityTimeValid(currentTime string, today time.Time) ([]Ac
 
     var activities []Activity
     err := DB.
+		//Debug().
         Where("status = 1").
         Where("activity_time = ?", currentTime).
         // ✅ 有效期过滤（DATE）

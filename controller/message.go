@@ -78,7 +78,6 @@ func PushMessageByJob(id int) {
 
 	activity, err := model.GetActiveContentByID(id, false)
 	if err != nil {
-
 		return
 	}
 
@@ -97,6 +96,7 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 		common.SysError(fmt.Sprintf("Error getting users: %v", err))
 		return
 	}
+	common.SysLog(fmt.Sprintf("Start pushing to %d users for activity ID %d (region: %d)", len(users), activity.Id, activity.RegionId))
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
@@ -437,7 +437,7 @@ func calculatePushJobStopDuration(currentActivity *model.Activity) time.Duration
 	currentTime := time.Now()
 	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.UTC)
 
-	common.SysLog(fmt.Sprintf("Current time: %s", currentTime.String()))
+	//common.SysLog(fmt.Sprintf("Current time: %s", currentTime.String()))
 
 	for _, t := range times {
 		if currentTime.Before(t) {
