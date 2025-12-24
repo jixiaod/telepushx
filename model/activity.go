@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+ 	"time"
 )
 
 type Activity struct {
@@ -15,6 +16,8 @@ type Activity struct {
 	ShopId       string `gorm:"column:shop_id;type:varchar(255)"`
 	ActivityTime string `gorm:"column:activity_time;type:varchar(60)"`
 	CountTime    int    `gorm:"column:count_time;type:int(11) unsigned"`
+	StartDate    time.Time `gorm:"column:start_date;type:date"`
+    EndDate      time.Time `gorm:"column:end_date;type:date"`
 }
 
 func (Activity) TableName() string {
@@ -53,4 +56,31 @@ func GetAllActivities() ([]*Activity, error) {
 	var activities []*Activity
 	err := DB.Find(&activities).Error
 	return activities, err
+}
+
+func GetActivitiesByActivityTimeValid(currentTime string, today time.Time) ([]Activity, error) {
+    // todayStr: "YYYY-MM-DD"
+    todayStr := today.Format("2006-01-02")
+
+    var activities []Activity
+    err := DB.
+        Where("status = 1").
+        Where("activity_time = ?", currentTime).
+        // ✅ 有效期过滤（DATE）
+        Where("start_date IS NULL OR start_date <= ?", todayStr).
+        Where("end_date IS NULL OR end_date >= ?", todayStr).
+        Find(&activities).Error
+
+    return activities, err
+}
+
+func ExpireActivitiesByTime(today time.Time, currentTime string) error {
+    todayStr := today.Format("2006-01-02")
+
+    // 将 end_date < today 的活动置为 status=0
+    return DB.Model(&Activity{}).
+        Where("status = 1").
+        Where("activity_time = ?", currentTime).
+        Where("end_date IS NOT NULL AND end_date < ?", todayStr).
+        Update("status", 0).Error
 }

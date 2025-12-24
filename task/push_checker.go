@@ -20,12 +20,17 @@ func CheckDatabaseAndPush() {
 	now := time.Now()
 	currentTime := now.Format("15:04")
 
-	// Query activities scheduled for current time
-	activities, err := model.GetActivitiesByActivityTime(currentTime + ":00")
-	if err != nil {
-		common.SysError(fmt.Sprintf("Error querying activities: %v", err))
-		return
+	// 先把过期的活动置 status=0
+	if err := model.ExpireActivitiesByTime(now, currentTime); err != nil {
+		common.SysError(fmt.Sprintf("Expire activities error: %v", err))
 	}
+
+	// Query activities scheduled for current time
+    activities, err := model.GetActivitiesByActivityTimeValid(currentTime, now)
+    if err != nil {
+        common.SysError(fmt.Sprintf("Error querying activities: %v", err))
+        return
+    }
 
 	// No activities to push
 	if len(activities) == 0 {
