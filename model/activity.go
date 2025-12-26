@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
  	"time"
+	"database/sql"
 )
 
 type Activity struct {
@@ -16,8 +17,8 @@ type Activity struct {
 	ShopId       string `gorm:"column:shop_id;type:varchar(255)"`
 	ActivityTime string `gorm:"column:activity_time;type:varchar(60)"`
 	CountTime    int    `gorm:"column:count_time;type:int(11) unsigned"`
-	StartDate    time.Time `gorm:"column:start_date;type:date"`
-    EndDate      time.Time `gorm:"column:end_date;type:date"`
+	StartDate    sql.NullTime `gorm:"column:start_date;type:date"`
+    EndDate      sql.NullTime `gorm:"column:end_date;type:date"`
 }
 
 func (Activity) TableName() string {

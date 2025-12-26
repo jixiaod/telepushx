@@ -13,6 +13,7 @@ import (
 	"telepushx/common"
 	"telepushx/model"
 	"time"
+    "runtime/debug"
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -111,7 +112,12 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 		limiter = rate.NewLimiter(rate.Limit(common.PinPushJobRateLimitNum), 1)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), calculatePushJobStopDuration(activity)-30*time.Second)
+	// 小于 30 秒，会传入负数，ctx 立即 Done，推送会立刻停止
+	d := calculatePushJobStopDuration(activity) - 30 * time.Second
+	if d < 5 * time.Second {
+		d = 5 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), d)
 	defer cancel()
 
 	var wg sync.WaitGroup
@@ -120,69 +126,121 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button) {
 	queue.PushBatch(users)
 
 	IsPushingMessage = true
-
-	// 遍历队列中的用户
+	defer func() {
+		IsPushingMessage = false
+	}()
+	
+	maxWorkers := 50 // 可根据机器和限流调整
+	sem := make(chan struct{}, maxWorkers)
+	
+	dispatchLoop:
 	for {
-
+		// 取一个用户
 		user := queue.Pop()
-
+		if user == nil {
+			break
+		}
+	
+		// 如果已经超时，停止派发新任务
+		select {
+		case <-ctx.Done():
+			break dispatchLoop
+		default:
+		}
+	
+		// 并发限流
+		sem <- struct{}{}
 		wg.Add(1)
+	
 		go func(u *model.User) {
-
 			defer wg.Done()
-
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if err := limiter.Wait(ctx); err != nil {
-					// If rate limit is exceeded, add the user back to the front of the queue
-					//users = append([]*model.User{u}, users...)
-					queue.PushFront(u)
-					//common.SysLog(fmt.Sprintf("Rate limit exceeded for user %s adding back to the front of the queue", u.ChatId))
-					return
+			defer func() { <-sem }()
+	
+			// 防 panic，避免整个进程崩
+			defer func() {
+				if r := recover(); r != nil {
+					common.SysError(fmt.Sprintf(
+						"panic in push goroutine activity=%d user=%s r=%v",
+						activity.Id, u.ChatId, r,
+					))
+					common.SysError(string(debug.Stack()))
 				}
-
-				err = sendTelegramMessage(bot, u, activity, buttons)
-
-				if err != nil {
-					errMessage := err.Error() // 缓存错误消息，避免重复调用
-
-					if strings.Contains(errMessage, "Gateway Timeout") {
-						common.SysLog(fmt.Sprintf("Gateway Timeout %d to user %s: %v", activity.Id, u.ChatId, err))
-						queue.PushFront(u) // Re-add user to the front of the queue
-						time.Sleep(10 * time.Second)
-					} else if strings.Contains(errMessage, "Too Many Requests") || strings.Contains(errMessage, "Gateway Timeout") {
-						common.SysLog(fmt.Sprintf("Too Many Requests %d to user %s: %v", activity.Id, u.ChatId, err))
-						queue.PushFront(u) // Re-add user to the front of the queue
-						time.Sleep(1 * time.Second)
-					} else {
-						common.SysLog(fmt.Sprintf("Error sending %d to user %s: %v", activity.Id, u.ChatId, err))
-						stats.IncrementFailed()
-
-						if strings.Contains(errMessage, "Forbidden") {
-							model.UpdateUserStatusById(int(u.Id), 0)
-						}
-					}
-				} else {
-					common.SysLog(fmt.Sprintf("Message sent successfully %d to user %s", activity.Id, u.ChatId))
-					stats.IncrementSuccess()
-				}
+			}()
+	
+			// 如果上下文已取消，直接返回
+			if ctx.Err() != nil {
 				return
 			}
+	
+			// Telegram 速率限制
+			if err := limiter.Wait(ctx); err != nil {
+				queue.PushFront(u)
+				return
+			}
+	
+			// === 发送消息 ===
+			sendErr := sendTelegramMessage(bot, u, activity, buttons)
+			if sendErr != nil {
+				errMessage := sendErr.Error()
+	
+				if strings.Contains(errMessage, "Gateway Timeout") {
+					common.SysLog(fmt.Sprintf(
+						"Gateway Timeout %d to user %s: %v",
+						activity.Id, u.ChatId, sendErr,
+					))
+					queue.PushFront(u)
+					time.Sleep(10 * time.Second)
+					return
+				}
+	
+				if strings.Contains(errMessage, "Too Many Requests") {
+					common.SysLog(fmt.Sprintf(
+						"Too Many Requests %d to user %s: %v",
+						activity.Id, u.ChatId, sendErr,
+					))
+					queue.PushFront(u)
+					time.Sleep(1 * time.Second)
+					return
+				}
+	
+				if strings.Contains(errMessage, "Forbidden") {
+					common.SysLog(fmt.Sprintf(
+						"Forbidden %d to user %s: %v",
+						activity.Id, u.ChatId, sendErr,
+					))
+					stats.IncrementFailed()
+					model.UpdateUserStatusById(int(u.Id), 0)
+					return
+				}
+	
+				common.SysLog(fmt.Sprintf(
+					"Error sending %d to user %s: %v",
+					activity.Id, u.ChatId, sendErr,
+				))
+				stats.IncrementFailed()
+				return
+			}
+	
+			// 成功
+			common.SysLog(fmt.Sprintf(
+				"Message sent successfully %d to user %s",
+				activity.Id, u.ChatId,
+			))
+			stats.IncrementSuccess()
+	
 		}(user)
-
+	
 		if !queue.HasNext() {
 			break
 		}
 	}
-
+	
 	wg.Wait()
+	
 	stats.RecordEndTime()
 	common.SysLog("Push process completed.")
 	common.SysLog(fmt.Sprintf("Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d", activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush))
 	common.SysLog(fmt.Sprintf("Push process %d: startTime: %s, endTime: %s", activity.Id, stats.PushStartTime, stats.PushEndTime))
-	IsPushingMessage = false
 }
 
 func PreviewMessage(c *gin.Context) {
