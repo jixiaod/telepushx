@@ -9,6 +9,7 @@ import (
 type Activity struct {
 	Id           int    `gorm:"column:id;primaryKey;autoIncrement;type:int(10) unsigned"`
 	RegionId     int    `gorm:"column:region_id;type:int(10) unsigned"`
+	TargetScope  int    `gorm:"column:target_scope"` //
 	Content      string `gorm:"column:activity_text;type:text"`
 	Image        string `gorm:"column:activity_image;type:text"`
 	Video        string `gorm:"column:mp4;type:text"`
@@ -68,7 +69,7 @@ func GetActivitiesByActivityTimeValid(currentTime string, today time.Time) ([]Ac
 		//Debug().
         Where("status = 1").
         Where("activity_time = ?", currentTime).
-        // ✅ 有效期过滤（DATE）
+        // 有效期过滤（DATE）
         Where("start_date IS NULL OR start_date <= ?", todayStr).
         Where("end_date IS NULL OR end_date >= ?", todayStr).
         Find(&activities).Error

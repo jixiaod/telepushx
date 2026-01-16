@@ -25,7 +25,7 @@ func CheckDatabaseAndPush() {
 		common.SysError(fmt.Sprintf("Expire activities error: %v", err))
 	}
 
-	// Query activities scheduled for current time
+	// 1) 查该时刻所有有效活动（不按 region 过滤）
     activities, err := model.GetActivitiesByActivityTimeValid(currentTime, now)
     if err != nil {
         common.SysError(fmt.Sprintf("Error querying activities: %v", err))
@@ -36,32 +36,96 @@ func CheckDatabaseAndPush() {
 	if len(activities) == 0 {
 		return
 	}
-	// 1. 按 region_id 分组
+	//  2) 按 region_id 分组
+	// 展开：targetRegionId => []activityId
 	regionActivities := make(map[int][]int)
 
-	for _, activity := range activities {
-		regionActivities[activity.RegionId] = append(
-			regionActivities[activity.RegionId],
-			activity.Id,
-		)
-	}
 
-	// 2. 每个 region 单独轮询
-	for regionId, activityIds := range regionActivities {
-		if len(activityIds) == 0 {
-			continue
-		}
+    // descendants 缓存，避免重复查 closure
+    descCache := make(map[int][]int)
 
-		selectedActivityId := dailyRoundRobin(activityIds)
+    // 全局目标地区缓存（按 users distinct region_id）
+    globalTargets := []int{}
+    globalLoaded := false
 
-		
-		common.SysLog(fmt.Sprintf(
-		 	"Region %d select activity %d at %s",
-		 	regionId, selectedActivityId, currentTime,
-		))
+    for _, a := range activities {
 
-		go controller.PushMessageByJob(selectedActivityId)
-	}
+        targets := []int{}
+
+        switch a.TargetScope {
+        case 2:
+            // 全局：推到所有“有用户的地区”
+            if !globalLoaded {
+                ids, e := model.GetAllUserRegionIds()
+                if e != nil {
+                    common.SysError(fmt.Sprintf("Error querying global region ids: %v", e))
+                    continue
+                }
+                globalTargets = ids
+                globalLoaded = true
+            }
+            targets = globalTargets
+
+        case 1:
+            // 含下级：把活动 region 展开为 descendants(region)
+            rid := a.RegionId
+            if rid == 0 {
+                // 兜底：region_id=0 + scope=1，按全局处理
+                if !globalLoaded {
+                    ids, e := model.GetAllUserRegionIds()
+                    if e != nil {
+                        common.SysError(fmt.Sprintf("Error querying global region ids: %v", e))
+                        continue
+                    }
+                    globalTargets = ids
+                    globalLoaded = true
+                }
+                targets = globalTargets
+            } else {
+                if cached, ok := descCache[rid]; ok {
+                    targets = cached
+                } else {
+                    ids, e := model.GetDescendantRegionIds(rid)
+                    if e != nil {
+                        common.SysError(fmt.Sprintf("Error querying descendant regions: %v", e))
+                        continue
+                    }
+                    descCache[rid] = ids
+                    targets = ids
+                }
+            }
+
+        default:
+            // 仅本地区：只推到该 region 本身
+            if a.RegionId != 0 {
+                targets = []int{a.RegionId}
+            }
+        }
+
+        // 3) 把 activityId 分配到每个 targetRegionId
+        for _, tr := range targets {
+            if tr == 0 {
+                continue
+            }
+            regionActivities[tr] = append(regionActivities[tr], a.Id)
+        }
+    }
+
+    // 4) 每个目标地区单独轮询推送
+    for targetRegionId, activityIds := range regionActivities {
+        if len(activityIds) == 0 {
+            continue
+        }
+
+        selectedActivityId := dailyRoundRobin(activityIds)
+
+        common.SysLog(fmt.Sprintf(
+            "Region %d select activity %d at %s",
+            targetRegionId, selectedActivityId, currentTime,
+        ))
+
+        go controller.PushMessageByJob(selectedActivityId, targetRegionId)
+    }
 }
 
 // 定时任务启动函数

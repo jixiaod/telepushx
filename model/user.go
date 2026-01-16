@@ -38,6 +38,26 @@ func GetAllUsersWithRegionId(regionId int, startIdx int, num int) (users []*User
 	return users, err
 }
 
+func GetAllUserRegionIds() ([]int, error) {
+    var ids []int
+    err := DB.Table("users").
+        Distinct().
+        Select("region_id").
+        Where("region_id IS NOT NULL").
+        Where("region_id <> 0").
+        Scan(&ids).Error
+    return ids, err
+}
+
+func GetDescendantRegionIds(regionId int) ([]int, error) {
+    var ids []int
+    err := DB.Table("region_closure").
+        Select("descendant_id").
+        Where("ancestor_id = ?", regionId).
+        Scan(&ids).Error
+    return ids, err
+}
+
 func GetMaxUserId() int64 {
 	var user User
 	DB.Last(&user)
