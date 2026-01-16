@@ -111,6 +111,8 @@ func CheckDatabaseAndPush() {
         }
     }
 
+    fmt.Printf("targets: %+v\n", targets)
+
     // 4) 每个目标地区单独轮询推送
     for targetRegionId, activityIds := range regionActivities {
         if len(activityIds) == 0 {
