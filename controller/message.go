@@ -14,6 +14,7 @@ import (
 	"telepushx/model"
 	"time"
     "runtime/debug"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -21,7 +22,8 @@ import (
 )
 
 // 全局变量，标识是否有正在进行中的推送
-var IsPushingMessage bool = false
+var pushingFlag int32 = 0
+var PushMessageLock int32 = 0
 
 func PushMessageByJob(id int, targetRegionId int) {
 
@@ -77,8 +79,12 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button, targetRegi
     queue := &model.UserQueue{}
     queue.PushBatch(users)
 
-    IsPushingMessage = true
-    defer func() { IsPushingMessage = false }()
+	// 抢占推送锁（保证全局只有一个推送任务）
+	if !atomic.CompareAndSwapInt32(&pushingFlag, 0, 1) {
+		common.SysLog("已有推送正在执行，跳过")
+		return
+	}
+	defer atomic.StoreInt32(&pushingFlag, 0)
 
     maxWorkers := 50
     sem := make(chan struct{}, maxWorkers)

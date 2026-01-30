@@ -2,7 +2,8 @@ package task
 
 import (
 	"fmt"
-
+    "sync/atomic"
+    
 	"telepushx/common"
 	"telepushx/controller"
 	"telepushx/model"
@@ -11,9 +12,11 @@ import (
 
 // 定义定时任务逻辑
 func CheckDatabaseAndPush() {
-	if controller.IsPushingMessage {
-		return
-	}
+    // 抢占推送锁，如果已有推送，跳过本轮
+    if !atomic.CompareAndSwapInt32(&controller.PushMessageLock, 0, 1) {
+        return
+    }
+    defer atomic.StoreInt32(&controller.PushMessageLock, 0)
 
 	//common.SysLog(fmt.Sprintf("Checking database for pending push tasks:%v", time.Now()))
 	// Get current time and format to HH:mm
