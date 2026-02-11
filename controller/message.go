@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 	"runtime/debug"
-	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 	"telepushx/common"
@@ -22,8 +21,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// 全局标识是否有推送批次在执行
-var pushingFlag int32 = 0
 
 // PushMessageByJob 根据活动id和目标地区推送消息
 func PushMessageByJob(id int, targetRegionId int) {
@@ -83,13 +80,6 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button, targetRegi
 	var wg sync.WaitGroup
 	queue := &model.UserQueue{}
 	queue.PushBatch(users)
-
-	// 抢占全局推送锁
-	if !atomic.CompareAndSwapInt32(&pushingFlag, 0, 1) {
-		common.SysLog("Another push batch is running, skipping this batch")
-		return
-	}
-	defer atomic.StoreInt32(&pushingFlag, 0)
 
 	maxWorkers := 50
 	sem := make(chan struct{}, maxWorkers)
@@ -162,10 +152,11 @@ dispatchLoop:
 	stats.RecordEndTime()
 
 	common.SysLog(fmt.Sprintf(
-		"Push completed activity %d: Total=%d, Success=%d, Failed=%d",
-		activity.Id, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush,
+		"Push completed activity %d (region %d): Total=%d, Success=%d, Failed=%d",
+		activity.Id, targetRegionId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush,
 	))
 }
+
 
 func PreviewMessage(c *gin.Context) {
 	uid := c.Param("uid")
