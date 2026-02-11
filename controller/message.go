@@ -4,35 +4,38 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 	"runtime/debug"
+	"sync/atomic"
 
+	"github.com/gin-gonic/gin"
 	"telepushx/common"
 	"telepushx/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/time/rate"
-	"github.com/gin-gonic/gin"
 )
 
-// 全局变量，标识是否有正在进行中的推送
+// 全局标识是否有推送批次在执行
 var pushingFlag int32 = 0
-var PushMessageLock int32 = 0
 
+// PushMessageByJob 根据活动id和目标地区推送消息
 func PushMessageByJob(id int, targetRegionId int) {
 	activity, err := model.GetActiveContentByID(id, false)
 	if err != nil {
+		common.SysError(fmt.Sprintf("Error getting activity %d: %v", id, err))
 		return
 	}
 
 	buttons, err := model.GetButtonsByActivityId(id)
 	if err != nil {
+		common.SysError(fmt.Sprintf("Error getting buttons for activity %d: %v", id, err))
 		return
 	}
 
@@ -46,9 +49,14 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button, targetRegi
 		return
 	}
 
+	if len(users) == 0 {
+		common.SysLog(fmt.Sprintf("No users in region %d for activity %d", targetRegionId, activity.Id))
+		return
+	}
+
 	common.SysLog(fmt.Sprintf(
-		"Start pushing to %d users for activity ID %d (activityRegion: %d, targetRegion: %d)",
-		len(users), activity.Id, activity.RegionId, targetRegionId,
+		"Start pushing activity %d to %d users (activityRegion: %d, targetRegion: %d)",
+		activity.Id, len(users), activity.RegionId, targetRegionId,
 	))
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
@@ -76,9 +84,9 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button, targetRegi
 	queue := &model.UserQueue{}
 	queue.PushBatch(users)
 
-	// 抢占推送锁（保证全局只有一个推送任务）
+	// 抢占全局推送锁
 	if !atomic.CompareAndSwapInt32(&pushingFlag, 0, 1) {
-		common.SysLog("已有推送正在执行，跳过")
+		common.SysLog("Another push batch is running, skipping this batch")
 		return
 	}
 	defer atomic.StoreInt32(&pushingFlag, 0)
@@ -127,33 +135,22 @@ dispatchLoop:
 
 			sendErr := sendTelegramMessage(bot, u, activity, buttons)
 			if sendErr != nil {
-				errMessage := sendErr.Error()
-
-				switch {
-				case strings.Contains(errMessage, "Gateway Timeout"):
-					common.SysLog(fmt.Sprintf("Gateway Timeout %d to user %s: %v", activity.Id, u.ChatId, sendErr))
+				errMsg := sendErr.Error()
+				if strings.Contains(errMsg, "Gateway Timeout") || strings.Contains(errMsg, "Too Many Requests") {
 					queue.PushFront(u)
-					time.Sleep(10 * time.Second)
+					time.Sleep(2 * time.Second)
 					return
-				case strings.Contains(errMessage, "Too Many Requests"):
-					common.SysLog(fmt.Sprintf("Too Many Requests %d to user %s: %v", activity.Id, u.ChatId, sendErr))
-					queue.PushFront(u)
-					time.Sleep(1 * time.Second)
-					return
-				case strings.Contains(errMessage, "Forbidden"):
-					common.SysLog(fmt.Sprintf("Forbidden %d to user %s: %v", activity.Id, u.ChatId, sendErr))
+				}
+				if strings.Contains(errMsg, "Forbidden") {
 					stats.IncrementFailed()
 					model.UpdateUserStatusById(int(u.Id), 0)
 					return
-				default:
-					common.SysLog(fmt.Sprintf("Error sending %d to user %s: %v", activity.Id, u.ChatId, sendErr))
-					stats.IncrementFailed()
-					return
 				}
+				stats.IncrementFailed()
+				return
 			}
 
 			stats.IncrementSuccess()
-
 		}(user)
 
 		if !queue.HasNext() {
@@ -162,82 +159,105 @@ dispatchLoop:
 	}
 
 	wg.Wait()
-
 	stats.RecordEndTime()
+
 	common.SysLog(fmt.Sprintf(
-		"Push process %d:%s completed. Total users: %d, Success: %d, Failed: %d",
-		activity.Id, activity.ShopId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush,
-	))
-	common.SysLog(fmt.Sprintf(
-		"Push process %d: startTime: %s, endTime: %s",
-		activity.Id, stats.PushStartTime, stats.PushEndTime,
+		"Push completed activity %d: Total=%d, Success=%d, Failed=%d",
+		activity.Id, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush,
 	))
 }
-
-// =================== PreviewMessage (HTTP API) ===================
 
 func PreviewMessage(c *gin.Context) {
 	uid := c.Param("uid")
 	id := c.Param("id")
 
+	// Convert id from string to int
 	activeID, err := strconv.Atoi(id)
 	if err != nil {
-		c.JSON(400, gin.H{"success": false, "message": "Invalid ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid ID format",
+			"data":    gin.H{},
+		})
 		return
 	}
 
 	activity, err := model.GetActiveContentByID(activeID, false)
 	if err != nil {
-		c.JSON(500, gin.H{"success": false, "message": "Error getting active content"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error getting active content",
+			"data":    gin.H{},
+		})
 		return
 	}
 
 	buttons, err := model.GetButtonsByActivityId(activeID)
 	if err != nil {
-		c.JSON(500, gin.H{"success": false, "message": "Error getting buttons"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error getting active buttons",
+			"data":    gin.H{},
+		})
 		return
 	}
-
+	// Convert id from string to int
 	userID, err := strconv.Atoi(uid)
 	if err != nil {
-		c.JSON(400, gin.H{"success": false, "message": "Invalid UID format"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid UID format",
+			"data":    gin.H{},
+		})
 		return
 	}
-
 	user, err := model.GetUserById(userID, false)
 	if err != nil {
-		c.JSON(500, gin.H{"success": false, "message": "Error getting user"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error getting user",
+			"data":    gin.H{},
+		})
 		return
 	}
 
 	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_BOT_TOKEN"))
 	if err != nil {
-		c.JSON(500, gin.H{"success": false, "message": "Error creating bot"})
+		common.SysError(fmt.Sprintf("Error creating bot: %v", err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Error creating bot",
+			"data":    gin.H{},
+		})
 		return
 	}
 
 	user.Name = "预览用户"
 	err = sendTelegramMessage(bot, user, activity, buttons)
 	if err != nil {
-		c.JSON(500, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+			"data":    gin.H{},
+		})
 		return
 	}
 
-	c.JSON(200, gin.H{"success": true, "message": "Message sent successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Message sent successfully",
+		"data":    gin.H{},
+	})
 }
-
-// =================== Telegram 发送消息 ===================
 
 func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Activity, buttons []*model.Button) error {
 	chatID, err := strconv.ParseInt(u.ChatId, 10, 64)
 	if err != nil {
-		common.SysError(fmt.Sprintf("Error parsing chat ID for user %d: %v", u.Id, err))
 		return err
 	}
 
 	var images []string
-	err = json.Unmarshal([]byte(activity.Image), &images)
-	if err != nil {
+	if err := json.Unmarshal([]byte(activity.Image), &images); err != nil {
 		return err
 	}
 
@@ -246,15 +266,19 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		photo.Caption = "亲爱的" + common.FilterName(u.Name) + ":\n\n" + common.Text(activity.Content)
 		photo.ParseMode = "HTML"
 		if len(buttons) > 0 {
-			photo.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{InlineKeyboard: buildButtonOptions(buttons)}
+			photo.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+				InlineKeyboard: buildButtonOptions(buttons),
+			}
 		}
-		sentMsgRes, err := bot.Send(photo)
+		sentMsg, err := bot.Send(photo)
 		if err != nil {
 			return err
 		}
 		if activity.IsPin == 1 {
-			pinConfig := tgbotapi.PinChatMessageConfig{ChatID: chatID, MessageID: sentMsgRes.MessageID, DisableNotification: false}
-			_, _ = bot.Request(pinConfig)
+			_, _ = bot.Request(tgbotapi.PinChatMessageConfig{
+				ChatID:    chatID,
+				MessageID: sentMsg.MessageID,
+			})
 			time.Sleep(500 * time.Millisecond)
 		}
 	} else if activity.Type == 1 {
@@ -262,110 +286,96 @@ func sendTelegramMessage(bot *tgbotapi.BotAPI, u *model.User, activity *model.Ac
 		video.Caption = "亲爱的" + common.FilterName(u.Name) + ":\n\n" + common.Text(activity.Content)
 		video.ParseMode = "HTML"
 		if len(buttons) > 0 {
-			video.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{InlineKeyboard: buildButtonOptions(buttons)}
+			video.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{
+				InlineKeyboard: buildButtonOptions(buttons),
+			}
 		}
-		sentMsgRes, err := bot.Send(video)
+		sentMsg, err := bot.Send(video)
 		if err != nil {
 			return err
 		}
 		if activity.IsPin == 1 {
-			pinConfig := tgbotapi.PinChatMessageConfig{ChatID: chatID, MessageID: sentMsgRes.MessageID, DisableNotification: false}
-			_, _ = bot.Request(pinConfig)
+			_, _ = bot.Request(tgbotapi.PinChatMessageConfig{
+				ChatID:    chatID,
+				MessageID: sentMsg.MessageID,
+			})
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
-
 	return nil
 }
 
-// =================== 构建按钮 ===================
-
 func buildButtonOptions(buttons []*model.Button) [][]tgbotapi.InlineKeyboardButton {
 	maxLine := 0
-	for _, button := range buttons {
-		if button.OneLine > maxLine {
-			maxLine = button.OneLine
+	for _, b := range buttons {
+		if b.OneLine > maxLine {
+			maxLine = b.OneLine
 		}
 	}
 
-	var options [][]tgbotapi.InlineKeyboardButton
+	var result [][]tgbotapi.InlineKeyboardButton
 	for line := 1; line <= maxLine; line++ {
-		var lineOption []tgbotapi.InlineKeyboardButton
-		for _, button := range buttons {
-			if button.OneLine == line {
-				lineOption = append(lineOption, buildButton(button))
+		var row []tgbotapi.InlineKeyboardButton
+		for _, b := range buttons {
+			if b.OneLine == line {
+				row = append(row, buildButton(b))
 			}
 		}
-		if len(lineOption) > 0 {
-			options = append(options, lineOption)
+		if len(row) > 0 {
+			result = append(result, row)
 		}
 	}
-
-	return options
+	return result
 }
 
 func buildButton(button *model.Button) tgbotapi.InlineKeyboardButton {
 	if button.Inline != "" {
 		return tgbotapi.NewInlineKeyboardButtonData(button.Text, button.Inline)
+	} else {
+		link := button.Link
+		if link == "" {
+			link = "https://t.me/Ytxzs_bot"
+		}
+		return tgbotapi.NewInlineKeyboardButtonURL(button.Text, link)
 	}
-	buttonLink := button.Link
-	if buttonLink == "" {
-		buttonLink = "https://t.me/Ytxzs_bot"
-	}
-	return tgbotapi.NewInlineKeyboardButtonURL(button.Text, buttonLink)
 }
 
-// =================== 推送时间计算 ===================
-
-func calculatePushJobStopDuration(currentActivity *model.Activity) time.Duration {
+func calculatePushJobStopDuration(activity *model.Activity) time.Duration {
 	pushDuration := common.PushJobStopDuration
 
-	if currentActivity != nil && currentActivity.CountTime > 0 {
-		pushDuration = time.Duration(currentActivity.CountTime) * time.Minute
-		common.SysLog(fmt.Sprintf("Using count_time from current activity: %d minutes", currentActivity.CountTime))
-		return pushDuration
+	if activity != nil && activity.CountTime > 0 {
+		return time.Duration(activity.CountTime) * time.Minute
 	}
 
 	rows, err := model.GetAllActivitiesOrderByTime()
-	if err != nil {
+	if err != nil || len(rows) == 0 {
 		return pushDuration
 	}
 
 	var times []time.Time
 	layout := "15:04:05"
-
-	for _, activity := range rows {
-		if activity.ActivityTime == "" {
+	for _, a := range rows {
+		tStr := a.ActivityTime
+		if tStr == "" {
 			continue
 		}
-		parsedTime, err := time.Parse(layout, activity.ActivityTime)
+		tm, err := time.Parse(layout, tStr)
 		if err != nil {
 			continue
 		}
-		times = append(times, parsedTime.UTC())
+		times = append(times, tm.UTC())
 	}
 
-	if len(times) == 0 {
-		return pushDuration
-	}
-
-	sort.Slice(times, func(i, j int) bool {
-		return times[i].Before(times[j])
-	})
+	sort.Slice(times, func(i, j int) bool { return times[i].Before(times[j]) })
 
 	currentTime := time.Now()
 	currentTime = time.Date(0, 1, 1, currentTime.Hour(), currentTime.Minute(), currentTime.Second(), 0, time.UTC)
 
 	for _, t := range times {
 		if currentTime.Before(t) {
-			pushDuration = t.Sub(currentTime)
-			common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d seconds", t.String(), pushDuration.Seconds()))
-			return pushDuration
+			return t.Sub(currentTime)
 		}
 	}
 
-	nextDayFirstTime := times[0].Add(24 * time.Hour)
-	pushDuration = nextDayFirstTime.Sub(currentTime)
-	common.SysLog(fmt.Sprintf("Next push time: %s, duration: %d seconds", nextDayFirstTime.String(), pushDuration.Seconds()))
-	return pushDuration
+	return times[0].Add(24 * time.Hour).Sub(currentTime)
 }

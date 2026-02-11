@@ -10,52 +10,50 @@ import (
 	"telepushx/model"
 )
 
-// 定时检查数据库并推送消息
+// 批次锁，保证同一时间点只执行一个批次
+var batchLock int32 = 0
+
+// 检查数据库并推送消息
 func CheckDatabaseAndPush() {
-	// 抢占推送锁，如果已有推送，跳过本轮
-	if !atomic.CompareAndSwapInt32(&controller.PushMessageLock, 0, 1) {
+	// 如果已有批次在执行，跳过
+	if !atomic.CompareAndSwapInt32(&batchLock, 0, 1) {
+		common.SysLog("Previous batch still running, skip this check")
 		return
 	}
-	defer atomic.StoreInt32(&controller.PushMessageLock, 0)
+	defer atomic.StoreInt32(&batchLock, 0)
 
 	now := time.Now()
-	currentTime := now.Format("15:04:00") // HH:mm:ss 格式
+	currentTime := now.Format("15:04:00")
 
-	// 将过期活动置 status=0
+	// 先将过期活动置 status=0
 	if err := model.ExpireActivitiesByTime(now, currentTime); err != nil {
 		common.SysError(fmt.Sprintf("Expire activities error: %v", err))
 	}
 
-	// 获取当前时间点的有效活动
+	// 获取当前时间点有效活动
 	activities, err := model.GetActivitiesByActivityTimeValid(currentTime, now)
 	if err != nil {
-		common.SysError(fmt.Sprintf("Error querying activities: %v", err))
+		common.SysError(fmt.Sprintf("Query activities error: %v", err))
 		return
 	}
-
 	if len(activities) == 0 {
 		return
 	}
 
-	// 按 targetRegionId 分组
+	// 构建 region -> activityId 映射
 	regionActivities := make(map[int][]int)
-
-	// 缓存 descendants 避免重复查询
 	descCache := make(map[int][]int)
-
-	// 全局目标地区缓存
 	globalTargets := []int{}
 	globalLoaded := false
 
 	for _, a := range activities {
 		targets := []int{}
-
 		switch a.TargetScope {
-		case 2: // 全局：推到所有“有用户的地区”
+		case 2:
 			if !globalLoaded {
 				ids, e := model.GetAllUserRegionIds()
 				if e != nil {
-					common.SysError(fmt.Sprintf("Error querying global region ids: %v", e))
+					common.SysError(fmt.Sprintf("Error querying global regions: %v", e))
 					continue
 				}
 				globalTargets = ids
@@ -63,13 +61,13 @@ func CheckDatabaseAndPush() {
 			}
 			targets = globalTargets
 
-		case 1: // 含下级：把活动 region 展开为 descendants(region)
+		case 1:
 			rid := a.RegionId
 			if rid == 0 {
 				if !globalLoaded {
 					ids, e := model.GetAllUserRegionIds()
 					if e != nil {
-						common.SysError(fmt.Sprintf("Error querying global region ids: %v", e))
+						common.SysError(fmt.Sprintf("Error querying global regions: %v", e))
 						continue
 					}
 					globalTargets = ids
@@ -82,7 +80,7 @@ func CheckDatabaseAndPush() {
 				} else {
 					ids, e := model.GetDescendantRegionIds(rid)
 					if e != nil {
-						common.SysError(fmt.Sprintf("Error querying descendant regions: %v", e))
+						common.SysError(fmt.Sprintf("Error querying descendants: %v", e))
 						continue
 					}
 					descCache[rid] = ids
@@ -90,13 +88,12 @@ func CheckDatabaseAndPush() {
 				}
 			}
 
-		default: // 仅本地区
+		default:
 			if a.RegionId != 0 {
 				targets = []int{a.RegionId}
 			}
 		}
 
-		// 分配 activityId 到每个 targetRegionId
 		for _, tr := range targets {
 			if tr == 0 {
 				continue
@@ -105,49 +102,32 @@ func CheckDatabaseAndPush() {
 		}
 	}
 
-	// 每个目标地区单独轮询推送
-	for targetRegionId, activityIds := range regionActivities {
+	// 每个目标地区推送轮询选择的活动
+	for regionId, activityIds := range regionActivities {
 		if len(activityIds) == 0 {
 			continue
 		}
-
 		selectedActivityId := dailyRoundRobin(activityIds)
-
-		common.SysLog(fmt.Sprintf(
-			"Region %d select activity %d at %s",
-			targetRegionId, selectedActivityId, currentTime,
-		))
-
-		go controller.PushMessageByJob(selectedActivityId, targetRegionId)
+		common.SysLog(fmt.Sprintf("Region %d select activity %d at %s", regionId, selectedActivityId, currentTime))
+		go controller.PushMessageByJob(selectedActivityId, regionId)
 	}
 }
 
-// 启动定时任务，每分钟检查一次
+// 启动定时任务，每分钟检测一次
 func StartPushChecker() {
 	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
-	waitDuration := time.Until(nextMinute)
-	time.Sleep(waitDuration)
+	time.Sleep(time.Until(nextMinute))
 
-	doStartPushChecker()
-}
-
-func doStartPushChecker() {
 	ticker := time.NewTicker(1 * time.Minute)
-	common.SysLog(fmt.Sprintf("Push checker started at %v", time.Now()))
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				CheckDatabaseAndPush()
-			}
-		}
-	}()
+	common.SysLog("Push checker started")
+
+	for range ticker.C {
+		CheckDatabaseAndPush()
+	}
 }
 
-// 日常轮询选择活动，按天索引循环
+// 每日轮询选择活动
 func dailyRoundRobin(elements []int) int {
-	today := time.Now()
-	dayIndex := today.Unix() / (60 * 60 * 24)
-	currentIndex := int(dayIndex) % len(elements)
-	return elements[currentIndex]
+	today := time.Now().Unix() / (60 * 60 * 24)
+	return elements[int(today)%len(elements)]
 }
