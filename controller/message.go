@@ -21,7 +21,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-
 // PushMessageByJob 根据活动id和目标地区推送消息
 func PushMessageByJob(id int, targetRegionId int) {
 	activity, err := model.GetActiveContentByID(id, false)
@@ -84,76 +83,78 @@ func doPushMessage(activity *model.Activity, buttons []*model.Button, targetRegi
 	maxWorkers := 50
 	sem := make(chan struct{}, maxWorkers)
 
-	// 用一个信号标记队列结束
-	doneCh := make(chan struct{})
-	go func() {
-		dispatchLoop:
-		for {
-			user := queue.Pop()
-			if user == nil {
-				break dispatchLoop
-			}
-	
-			sem <- struct{}{}
-			wg.Add(1)
-	
-			go func(u *model.User) {
-				defer wg.Done()
-				defer func() { <-sem }()
-	
-				defer func() {
-					if r := recover(); r != nil {
-						common.SysError(fmt.Sprintf(
-							"panic in push goroutine activity=%d user=%s r=%v",
-							activity.Id, u.ChatId, r,
-						))
-						common.SysError(string(debug.Stack()))
-					}
-				}()
-	
-				if ctx.Err() != nil {
-					return
-				}
-	
-				if err := limiter.Wait(ctx); err != nil {
-					queue.PushFront(u)
-					return
-				}
-	
-				sendErr := sendTelegramMessage(bot, u, activity, buttons)
-				if sendErr != nil {
-					errMsg := sendErr.Error()
-					if strings.Contains(errMsg, "Gateway Timeout") || strings.Contains(errMsg, "Too Many Requests") {
-						queue.PushFront(u)
-						time.Sleep(2 * time.Second)
-						return
-					}
-					if strings.Contains(errMsg, "Forbidden") {
-						stats.IncrementFailed()
-						model.UpdateUserStatusById(int(u.Id), 0)
-						return
-					}
-					stats.IncrementFailed()
-					return
-				}
-	
-				stats.IncrementSuccess()
-			}(user)
+dispatchLoop:
+	for {
+		user := queue.Pop()
+		if user == nil {
+			break
 		}
-		close(doneCh)
-	}()
-	
-	// 等待所有 goroutine 完成
+
+		select {
+		case <-ctx.Done():
+			break dispatchLoop
+		default:
+		}
+
+		sem <- struct{}{}
+		wg.Add(1)
+
+		go func(u *model.User) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			defer func() {
+				if r := recover(); r != nil {
+					common.SysError(fmt.Sprintf(
+						"panic in push goroutine activity=%d user=%s r=%v",
+						activity.Id, u.ChatId, r,
+					))
+					common.SysError(string(debug.Stack()))
+				}
+			}()
+
+			if ctx.Err() != nil {
+				return
+			}
+
+			if err := limiter.Wait(ctx); err != nil {
+				queue.PushFront(u)
+				return
+			}
+
+			sendErr := sendTelegramMessage(bot, u, activity, buttons)
+			if sendErr != nil {
+				errMsg := sendErr.Error()
+				if strings.Contains(errMsg, "Gateway Timeout") || strings.Contains(errMsg, "Too Many Requests") {
+					queue.PushFront(u)
+					time.Sleep(2 * time.Second)
+					return
+				}
+				if strings.Contains(errMsg, "Forbidden") {
+					stats.IncrementFailed()
+					model.UpdateUserStatusById(int(u.Id), 0)
+					return
+				}
+				stats.IncrementFailed()
+				return
+			}
+
+			stats.IncrementSuccess()
+		}(user)
+
+		if !queue.HasNext() {
+			break
+		}
+	}
+
 	wg.Wait()
-	<-doneCh
-	
 	stats.RecordEndTime()
+
 	common.SysLog(fmt.Sprintf(
 		"Push completed activity %d (region %d): Total=%d, Success=%d, Failed=%d",
 		activity.Id, targetRegionId, stats.TotalUsers, stats.SuccessfulPush, stats.FailedPush,
 	))
 }
-
 
 func PreviewMessage(c *gin.Context) {
 	uid := c.Param("uid")
