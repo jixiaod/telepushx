@@ -14,51 +14,60 @@ import (
 )
 
 func main() {
-
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		common.FatalLog(err)
 	}
 
+	initializeApplication()
+	defer closeDatabase()
+	startBackgroundTasks()
+
+	if err := newServer().Run(":" + resolvePort()); err != nil {
+		common.FatalLog(err)
+	}
+}
+
+func initializeApplication() {
 	common.Init()
 	common.SetupDailyRotateLog()
 	common.SysLog("TelepushX " + common.Version + " started")
+
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Connect to the database
-	err = model.InitDB()
-	if err != nil {
-		common.FatalLog(err)
-	}
-	defer func() {
-		err := model.CloseDB()
-		if err != nil {
-			common.FatalLog(err)
-		}
-	}()
-
-	// Initialize Redis
-	err = common.InitRedisClient()
-	if err != nil {
+	if err := model.InitDB(); err != nil {
 		common.FatalLog(err)
 	}
 
-	// 调用定时任务
+	if err := common.InitRedisClient(); err != nil {
+		common.FatalLog(err)
+	}
+}
+
+func closeDatabase() {
+	if err := model.CloseDB(); err != nil {
+		common.FatalLog(err)
+	}
+}
+
+func startBackgroundTasks() {
 	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
-	waitDuration := time.Until(nextMinute)
-	time.Sleep(waitDuration)
+	time.Sleep(time.Until(nextMinute))
 	task.StartPushChecker()
+}
 
+func newServer() *gin.Engine {
 	server := gin.Default()
 	router.SetRouter(server)
-	var port = os.Getenv("PORT")
-	if port == "" {
-		port = strconv.Itoa(*common.Port)
+	return server
+}
+
+func resolvePort() string {
+	port := os.Getenv("PORT")
+	if port != "" {
+		return port
 	}
-	err = server.Run(":" + port)
-	if err != nil {
-		common.FatalLog(err)
-	}
+
+	return strconv.Itoa(*common.Port)
 }

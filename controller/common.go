@@ -9,31 +9,20 @@ import (
 )
 
 func GetStatus(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data": gin.H{
-			"version":        common.Version,
-			"start_time":     common.StartTime,
-			"system_name":    common.SystemName,
-			"server_address": common.ServerAddress,
-		},
+	respondSuccess(c, gin.H{
+		"version":        common.Version,
+		"start_time":     common.StartTime,
+		"system_name":    common.SystemName,
+		"server_address": common.ServerAddress,
 	})
 }
 
 func GetActiveUserCount(c *gin.Context) {
 	count, err := model.GetActiveUserCount()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": err.Error(),
-			"data":    gin.H{},
-		})
+		respondError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    gin.H{"count": count},
-	})
+
+	respondSuccess(c, gin.H{"count": count})
 }

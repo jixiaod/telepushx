@@ -13,6 +13,12 @@ import (
 // 批次锁，保证同一时间点只执行一个批次
 var batchLock int32 = 0
 
+type regionActivityResolver struct {
+	descendantsByRegion map[int][]int
+	globalTargets       []int
+	globalLoaded        bool
+}
+
 // 检查数据库并推送消息
 func CheckDatabaseAndPush() {
 	// 如果已有批次在执行，跳过
@@ -40,58 +46,16 @@ func CheckDatabaseAndPush() {
 		return
 	}
 
-	// 构建 region -> activityId 映射
 	regionActivities := make(map[int][]int)
-	descCache := make(map[int][]int)
-	globalTargets := []int{}
-	globalLoaded := false
+	resolver := regionActivityResolver{
+		descendantsByRegion: make(map[int][]int),
+	}
 
 	for _, a := range activities {
-		targets := []int{}
-		switch a.TargetScope {
-		case 2:
-			if !globalLoaded {
-				ids, e := model.GetAllUserRegionIds()
-				if e != nil {
-					common.SysError(fmt.Sprintf("Error querying global regions: %v", e))
-					continue
-				}
-				globalTargets = ids
-				globalLoaded = true
-			}
-			targets = globalTargets
-
-		case 1:
-			rid := a.RegionId
-			if rid == 0 {
-				if !globalLoaded {
-					ids, e := model.GetAllUserRegionIds()
-					if e != nil {
-						common.SysError(fmt.Sprintf("Error querying global regions: %v", e))
-						continue
-					}
-					globalTargets = ids
-					globalLoaded = true
-				}
-				targets = globalTargets
-			} else {
-				if cached, ok := descCache[rid]; ok {
-					targets = cached
-				} else {
-					ids, e := model.GetDescendantRegionIds(rid)
-					if e != nil {
-						common.SysError(fmt.Sprintf("Error querying descendants: %v", e))
-						continue
-					}
-					descCache[rid] = ids
-					targets = ids
-				}
-			}
-
-		default:
-			if a.RegionId != 0 {
-				targets = []int{a.RegionId}
-			}
+		targets, err := resolver.resolveTargets(a)
+		if err != nil {
+			common.SysError(fmt.Sprintf("Resolve targets for activity %d error: %v", a.Id, err))
+			continue
 		}
 
 		for _, tr := range targets {
@@ -130,4 +94,50 @@ func StartPushChecker() {
 func dailyRoundRobin(elements []int) int {
 	today := time.Now().Unix() / (60 * 60 * 24)
 	return elements[int(today)%len(elements)]
+}
+
+func (r *regionActivityResolver) resolveTargets(activity model.Activity) ([]int, error) {
+	switch activity.TargetScope {
+	case 2:
+		return r.loadGlobalTargets()
+	case 1:
+		if activity.RegionId == 0 {
+			return r.loadGlobalTargets()
+		}
+		return r.loadDescendantTargets(activity.RegionId)
+	default:
+		if activity.RegionId == 0 {
+			return nil, nil
+		}
+		return []int{activity.RegionId}, nil
+	}
+}
+
+func (r *regionActivityResolver) loadGlobalTargets() ([]int, error) {
+	if r.globalLoaded {
+		return r.globalTargets, nil
+	}
+
+	ids, err := model.GetAllUserRegionIds()
+	if err != nil {
+		return nil, err
+	}
+
+	r.globalTargets = ids
+	r.globalLoaded = true
+	return r.globalTargets, nil
+}
+
+func (r *regionActivityResolver) loadDescendantTargets(regionID int) ([]int, error) {
+	if cached, ok := r.descendantsByRegion[regionID]; ok {
+		return cached, nil
+	}
+
+	ids, err := model.GetDescendantRegionIds(regionID)
+	if err != nil {
+		return nil, err
+	}
+
+	r.descendantsByRegion[regionID] = ids
+	return ids, nil
 }
